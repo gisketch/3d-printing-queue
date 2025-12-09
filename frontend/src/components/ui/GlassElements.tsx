@@ -6,7 +6,7 @@ import { cn } from '../../glass';
 export interface GlassProgressProps {
   value: number; // 0-100
   size?: 'sm' | 'md' | 'lg';
-  variant?: 'default' | 'success' | 'warning' | 'danger';
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'glow';
   showValue?: boolean;
   animated?: boolean;
   className?: string;
@@ -17,6 +17,7 @@ const progressVariants = {
   success: 'bg-gradient-to-r from-emerald-500 to-green-500',
   warning: 'bg-gradient-to-r from-amber-500 to-orange-500',
   danger: 'bg-gradient-to-r from-red-500 to-rose-500',
+  glow: 'bg-gradient-to-r from-purple-500 to-pink-500',
 };
 
 const sizeStyles = {

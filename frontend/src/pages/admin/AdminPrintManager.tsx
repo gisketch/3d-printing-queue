@@ -20,7 +20,7 @@ import {
   GlassFormField,
   GlassSeparator,
   GlassProgress,
-  StatCard,
+
 } from '../../components/ui';
 import { useJobs } from '../../hooks/useJobs';
 import { startPrinting, completeJob, failJob } from '../../services/jobService';
@@ -36,7 +36,7 @@ import {
   Printer,
   ListOrdered,
   History,
-  Zap,
+
 } from 'lucide-react';
 
 export const AdminPrintManager: React.FC = () => {

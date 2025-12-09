@@ -60,7 +60,7 @@ export const GlassTableRow: React.FC<GlassTableRowProps> = ({
   className = '',
   hover = true,
   onClick,
-  delay = 0,
+  delay: _delay = 0,
 }) => (
   <tr
     onClick={onClick}

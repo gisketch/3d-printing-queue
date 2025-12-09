@@ -10,7 +10,7 @@ const sidebarVariants = {
     x: 0,
     opacity: 1,
     transition: {
-      type: 'spring',
+      type: 'spring' as const,
       stiffness: 300,
       damping: 30,
       staggerChildren: 0.05,
@@ -26,7 +26,7 @@ export const sidebarItemVariants = {
     x: 0,
     opacity: 1,
     transition: {
-      type: 'spring',
+      type: 'spring' as const,
       stiffness: 300,
       damping: 25,
     },
@@ -148,8 +148,9 @@ export const GlassSidebarItem: React.FC<SidebarItemProps> = ({
   className = '',
 }) => (
   <motion.button
-    whileHover={{ x: 4 }}
+    whileHover={{ x: 2 }}
     whileTap={{ scale: 0.98 }}
+    transition={{ duration: 0.05 }}
     onClick={onClick}
     className={cn(
       'w-full flex items-center gap-3 px-3 py-2.5',
@@ -157,7 +158,7 @@ export const GlassSidebarItem: React.FC<SidebarItemProps> = ({
       'text-sm font-medium',
       'transition-all duration-200',
       active
-        ? cn(glass.bg.medium, glass.border.glow, 'text-cyan-300', glass.shadow.glow)
+        ? cn(glass.bg.medium, glass.border.glow, 'text-purple-400', glass.shadow.glow)
         : 'bg-transparent border border-transparent text-white/70 hover:bg-white/[0.06] hover:text-white',
       className
     )}
@@ -165,7 +166,7 @@ export const GlassSidebarItem: React.FC<SidebarItemProps> = ({
     {icon && (
       <span className={cn(
         'w-5 h-5',
-        active ? 'text-cyan-400' : 'text-white/50'
+        active ? 'text-purple-400' : 'text-white/50'
       )}>
         {icon}
       </span>
@@ -198,7 +199,7 @@ export const GlassSidebarNavLink: React.FC<SidebarNavLinkProps> = ({
           'text-sm font-medium',
           'transition-all duration-200',
           isActive
-            ? 'bg-white/[0.10] border border-cyan-400/30 text-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.1)]'
+            ? 'bg-white/[0.10] border border-purple-400/30 text-purple-400 shadow-[0_0_20px_rgba(34,211,238,0.1)]'
             : 'bg-transparent border border-transparent text-white/70 hover:bg-white/[0.06] hover:text-white',
           className
         )}
@@ -206,7 +207,7 @@ export const GlassSidebarNavLink: React.FC<SidebarNavLinkProps> = ({
         {icon && (
           <span className={cn(
             'w-5 h-5 flex items-center justify-center',
-            isActive ? 'text-cyan-400' : 'text-white/50'
+            isActive ? 'text-purple-400' : 'text-white/50'
           )}>
             {icon}
           </span>

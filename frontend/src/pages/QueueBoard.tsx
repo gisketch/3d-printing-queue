@@ -17,11 +17,11 @@ import {
   GlassProgress,
   GlassAvatar,
   GlassSeparator,
-  StatusDot,
+
 } from '../components/ui';
 import { useJobs } from '../hooks/useJobs';
 import { formatDuration, formatRelativeTime } from '../lib/utils';
-import type { Job } from '../types';
+
 import { Printer, Clock, Users, Loader2, CheckCircle2, History, Zap, TrendingUp } from 'lucide-react';
 
 export const QueueBoard: React.FC = () => {

@@ -99,7 +99,6 @@ export const GlassCard: React.FC<GlassCardProps> = ({
           'transition-[background-color,border-color,box-shadow] duration-300',
           className
         )}
-        {...(props as React.HTMLAttributes<HTMLDivElement>)}
       >
         {cardContent}
       </motion.div>

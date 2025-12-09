@@ -12,7 +12,7 @@ import {
   GlassTableRow,
   GlassTableHead,
   GlassTableCell,
-  GlassTableEmpty,
+
   GlassBadge,
   GlassButton,
   GlassModal,
