@@ -41,9 +41,9 @@ export const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
-      <Sidebar>
+      <Sidebar className="h-screen flex-shrink-0 flex flex-col sticky top-0">
         <SidebarHeader>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center
@@ -57,61 +57,65 @@ export const DashboardLayout: React.FC = () => {
           </div>
         </SidebarHeader>
 
-        <SidebarContent>
+        <SidebarContent className="flex-1 overflow-y-auto">
           {/* User Navigation */}
           <SidebarGroup>
             <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-            <NavLink to="/dashboard">
-              {({ isActive }) => (
-                <SidebarItem active={isActive}>
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
-                </SidebarItem>
-              )}
-            </NavLink>
-            <NavLink to="/queue">
-              {({ isActive }) => (
-                <SidebarItem active={isActive}>
-                  <ListOrdered className="w-4 h-4" />
-                  View Queue
-                </SidebarItem>
-              )}
-            </NavLink>
+            <div className="space-y-2">
+              <NavLink to="/dashboard">
+                {({ isActive }) => (
+                  <SidebarItem active={isActive}>
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </SidebarItem>
+                )}
+              </NavLink>
+              <NavLink to="/queue">
+                {({ isActive }) => (
+                  <SidebarItem active={isActive}>
+                    <ListOrdered className="w-4 h-4" />
+                    View Queue
+                  </SidebarItem>
+                )}
+              </NavLink>
+            </div>
           </SidebarGroup>
 
           {/* Admin Navigation */}
           {isAdmin && (
             <SidebarGroup>
               <SidebarGroupLabel>Admin</SidebarGroupLabel>
-              <NavLink to="/admin/review">
-                {({ isActive }) => (
-                  <SidebarItem active={isActive}>
-                    <FileCheck className="w-4 h-4" />
-                    Review Jobs
-                  </SidebarItem>
-                )}
-              </NavLink>
-              <NavLink to="/admin/print">
-                {({ isActive }) => (
-                  <SidebarItem active={isActive}>
-                    <Play className="w-4 h-4" />
-                    Print Manager
-                  </SidebarItem>
-                )}
-              </NavLink>
-              <NavLink to="/admin/users">
-                {({ isActive }) => (
-                  <SidebarItem active={isActive}>
-                    <Users className="w-4 h-4" />
-                    User Requests
-                  </SidebarItem>
-                )}
-              </NavLink>
+              <div className="space-y-2">
+                <NavLink to="/admin/review">
+                  {({ isActive }) => (
+                    <SidebarItem active={isActive}>
+                      <FileCheck className="w-4 h-4" />
+                      Review Jobs
+                    </SidebarItem>
+                  )}
+                </NavLink>
+                <NavLink to="/admin/print">
+                  {({ isActive }) => (
+                    <SidebarItem active={isActive}>
+                      <Play className="w-4 h-4" />
+                      Print Manager
+                    </SidebarItem>
+                  )}
+                </NavLink>
+                <NavLink to="/admin/users">
+                  {({ isActive }) => (
+                    <SidebarItem active={isActive}>
+                      <Users className="w-4 h-4" />
+                      User Requests
+                    </SidebarItem>
+                  )}
+                </NavLink>
+              </div>
             </SidebarGroup>
           )}
         </SidebarContent>
 
-        <SidebarFooter>
+        <SidebarFooter className="pb-4">
           {/* User Info */}
           <div className="px-3 py-2 mb-2">
             <p className="text-sm font-medium text-foreground">{user?.name}</p>
@@ -119,7 +123,7 @@ export const DashboardLayout: React.FC = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 px-3">
+          <div className="flex gap-3 px-3">
             <Button
               variant="ghost"
               size="icon"
@@ -141,7 +145,7 @@ export const DashboardLayout: React.FC = () => {
       </Sidebar>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 p-6 overflow-y-auto h-screen">
         <div className="max-w-6xl mx-auto">
           <Outlet />
         </div>

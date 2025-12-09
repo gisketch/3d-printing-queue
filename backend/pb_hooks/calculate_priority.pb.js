@@ -2,18 +2,20 @@
 
 // Netzon 3D Print Queue - PocketBase Hooks
 // Place this file in your PocketBase pb_hooks directory
+// Compatible with PocketBase v0.23+
 
 // Calculate priority score when job status changes to 'queued'
-onRecordBeforeUpdateRequest((e) => {
+onRecordUpdateRequest((e) => {
     const job = e.record;
-    const oldJob = e.originalCopy;
+    const newStatus = job.get("status");
+    const oldStatus = job.original().get("status");
 
     // Only trigger when status changes to 'queued'
-    if (job.get("status") === "queued" && oldJob.get("status") !== "queued") {
+    if (newStatus === "queued" && oldStatus !== "queued") {
         try {
             // 1. Fetch User's history
             const userId = job.get("user");
-            const user = $app.dao().findRecordById("users", userId);
+            const user = $app.findRecordById("users", userId);
             const totalPrintTime = user.getFloat("total_print_time") || 0; // hours
 
             // 2. Calculate Karma Score
@@ -34,25 +36,29 @@ onRecordBeforeUpdateRequest((e) => {
             console.log(`Priority calculated for job ${job.getId()}: ${score} (user print time: ${totalPrintTime}h)`);
         } catch (err) {
             console.error("Error calculating priority:", err);
+            // Don't block the update if priority calculation fails
         }
     }
+
+    return e.next();
 }, "jobs");
 
 // Clean up STL file after job completion (optional - can be done in frontend too)
 onRecordAfterUpdateRequest((e) => {
     const job = e.record;
-    const oldJob = e.originalCopy;
+    const newStatus = job.get("status");
+    const oldStatus = job.original().get("status");
 
     // Trigger when job moves to completed or failed
     const finalStatuses = ["completed", "failed"];
-    if (finalStatuses.includes(job.get("status")) && !finalStatuses.includes(oldJob.get("status"))) {
+    if (finalStatuses.includes(newStatus) && !finalStatuses.includes(oldStatus)) {
         // Log completion
-        console.log(`Job ${job.getId()} marked as ${job.get("status")}`);
+        console.log(`Job ${job.getId()} marked as ${newStatus}`);
     }
 }, "jobs");
 
 // Validate job submission - ensure user doesn't have active job
-onRecordBeforeCreateRequest((e) => {
+onRecordCreateRequest((e) => {
     const job = e.record;
     const userId = job.get("user");
 
@@ -61,10 +67,8 @@ onRecordBeforeCreateRequest((e) => {
     }
 
     // Check for existing active jobs
-    const activeStatuses = ["pending_review", "queued", "printing"];
-    
     try {
-        const existingJobs = $app.dao().findRecordsByFilter(
+        const existingJobs = $app.findRecordsByFilter(
             "jobs",
             `user = "${userId}" && (status = "pending_review" || status = "queued" || status = "printing")`,
             "-created",
@@ -81,4 +85,6 @@ onRecordBeforeCreateRequest((e) => {
         }
         // If no records found, that's fine - continue
     }
+
+    return e.next();
 }, "jobs");

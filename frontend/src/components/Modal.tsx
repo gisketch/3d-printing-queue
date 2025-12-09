@@ -41,10 +41,10 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center top-0 left-0 right-0 bottom-0 w-screen h-screen">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
+        className="fixed inset-0 top-0 left-0 w-screen h-screen bg-black/60 backdrop-blur-md animate-fade-in"
         onClick={hideCloseButton ? undefined : onClose}
       />
 
