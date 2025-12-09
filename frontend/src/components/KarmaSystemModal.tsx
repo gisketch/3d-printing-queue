@@ -1,7 +1,6 @@
 import React from 'react';
 import { GlassModal, GlassButton } from './ui';
 import { Scale, Clock, Zap, ShieldCheck } from 'lucide-react';
-import { cn, glass } from '../glass';
 
 interface KarmaSystemModalProps {
   isOpen: boolean;
@@ -25,13 +24,8 @@ export const KarmaSystemModal: React.FC<KarmaSystemModalProps> = ({ isOpen, onCl
         {/* Rules */}
         <div className="space-y-4">
           {/* Karma Rule */}
-          <div className={cn(
-            'flex gap-4 p-4 rounded-xl',
-            glass.bg.subtle,
-            'border',
-            glass.border.light
-          )}>
-            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 flex items-center justify-center">
+          <div className="flex gap-4 p-4 rounded-xl glass-sub-card">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 glass-icon-border flex items-center justify-center">
               <Scale className="w-5 h-5 text-purple-400" />
             </div>
             <div className="flex-1">
@@ -43,13 +37,8 @@ export const KarmaSystemModal: React.FC<KarmaSystemModalProps> = ({ isOpen, onCl
           </div>
 
           {/* One Job at a Time */}
-          <div className={cn(
-            'flex gap-4 p-4 rounded-xl',
-            glass.bg.subtle,
-            'border',
-            glass.border.light
-          )}>
-            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-red-400/30 flex items-center justify-center">
+          <div className="flex gap-4 p-4 rounded-xl glass-sub-card">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 glass-icon-border flex items-center justify-center">
               <Clock className="w-5 h-5 text-red-400" />
             </div>
             <div className="flex-1">
@@ -61,13 +50,8 @@ export const KarmaSystemModal: React.FC<KarmaSystemModalProps> = ({ isOpen, onCl
           </div>
 
           {/* Small Job Fast-Pass */}
-          <div className={cn(
-            'flex gap-4 p-4 rounded-xl',
-            glass.bg.subtle,
-            'border',
-            glass.border.light
-          )}>
-            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 flex items-center justify-center">
+          <div className="flex gap-4 p-4 rounded-xl glass-sub-card">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500/20 to-amber-500/20 glass-icon-border flex items-center justify-center">
               <Zap className="w-5 h-5 text-yellow-400" />
             </div>
             <div className="flex-1">
@@ -79,13 +63,8 @@ export const KarmaSystemModal: React.FC<KarmaSystemModalProps> = ({ isOpen, onCl
           </div>
 
           {/* Admin Review */}
-          <div className={cn(
-            'flex gap-4 p-4 rounded-xl',
-            glass.bg.subtle,
-            'border',
-            glass.border.light
-          )}>
-            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 flex items-center justify-center">
+          <div className="flex gap-4 p-4 rounded-xl glass-sub-card">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 glass-icon-border flex items-center justify-center">
               <ShieldCheck className="w-5 h-5 text-cyan-400" />
             </div>
             <div className="flex-1">

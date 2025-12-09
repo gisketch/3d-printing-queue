@@ -173,8 +173,7 @@ export const GlassTabs: React.FC<GlassTabsProps> = ({
 }) => (
   <div className={cn(
     'inline-flex p-1.5 gap-1',
-    'backdrop-blur-glass bg-white/[0.03]',
-    'border border-white/[0.08]',
+    'glass-tabs',
     'rounded-2xl',
     className
   )}>
@@ -188,8 +187,8 @@ export const GlassTabs: React.FC<GlassTabsProps> = ({
           'transition-all duration-200',
           'flex items-center gap-2',
           activeTab === tab.id
-            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_20px_rgba(34,211,238,0.15)]'
-            : 'text-white/50 hover:text-white hover:bg-white/[0.04] border border-transparent'
+            ? 'glass-tab-active'
+            : 'glass-tab'
         )}
       >
         {tab.icon}

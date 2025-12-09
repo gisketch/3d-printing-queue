@@ -228,7 +228,7 @@ export const AdminUserRequests: React.FC = () => {
       >
         {approvalResult ? (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-400/20">
+            <div className="p-4 rounded-xl glass-alert-success">
               <p className="text-sm text-emerald-300 mb-3">
                 Account created successfully! Send these credentials to the user.
               </p>

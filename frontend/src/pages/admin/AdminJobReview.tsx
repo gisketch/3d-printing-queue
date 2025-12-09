@@ -26,13 +26,13 @@ import { useJobs } from '../../hooks/useJobs';
 import { approveJob, rejectJob, getSTLFileUrl } from '../../services/jobService';
 import { formatRelativeTime } from '../../lib/utils';
 import type { Job } from '../../types';
-import { 
-  Check, 
-  X, 
-  Download, 
-  ExternalLink, 
-  Loader2, 
-  FileText, 
+import {
+  Check,
+  X,
+  Download,
+  ExternalLink,
+  Loader2,
+  FileText,
   FileCheck,
   Info,
   AlertCircle,
@@ -182,7 +182,7 @@ export const AdminJobReview: React.FC = () => {
             <Info className="w-5 h-5 text-cyan-400" />
           </div>
           <div>
-            <h3 className="font-medium text-white mb-2">Review Process</h3>
+            <h3 className="font-medium text-white mb-4">Review Process</h3>
             <ol className="text-sm text-white/60 space-y-1 list-decimal list-inside">
               <li>Download or open the STL file</li>
               <li>Open in your slicer software (Cura/PrusaSlicer)</li>
@@ -327,7 +327,7 @@ export const AdminJobReview: React.FC = () => {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="p-3 rounded-xl bg-red-500/20 border border-red-400/30 text-red-300 text-sm flex items-center gap-2"
+                className="p-3 rounded-xl glass-alert-danger text-red-300 text-sm flex items-center gap-2"
               >
                 <AlertCircle className="w-4 h-4" />
                 {approveError}
@@ -335,7 +335,7 @@ export const AdminJobReview: React.FC = () => {
             )}
           </AnimatePresence>
 
-          <div className="p-3 rounded-xl bg-white/[0.06] border border-white/[0.08]">
+          <div className="p-3 rounded-xl glass-sub-card">
             <p className="text-sm font-medium text-white">
               {selectedJob?.project_name}
             </p>
@@ -421,7 +421,7 @@ export const AdminJobReview: React.FC = () => {
         hideCloseButton={isRejecting}
       >
         <div className="space-y-4">
-          <div className="p-3 rounded-xl bg-white/[0.06] border border-white/[0.08]">
+          <div className="p-3 rounded-xl glass-sub-card">
             <p className="text-sm font-medium text-white">
               {selectedJob?.project_name}
             </p>

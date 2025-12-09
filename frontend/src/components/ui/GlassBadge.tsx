@@ -9,37 +9,14 @@ export interface GlassBadgeProps {
   className?: string;
 }
 
+// Use CSS component classes from index.css for proper border color handling
 const variantStyles = {
-  default: cn(
-    'bg-white/[0.10]',
-    'border border-white/[0.15]',
-    'text-white/80'
-  ),
-  primary: cn(
-    'bg-cyan-500/20',
-    'border border-cyan-400/30',
-    'text-cyan-300'
-  ),
-  success: cn(
-    'bg-emerald-500/20',
-    'border border-emerald-400/30',
-    'text-emerald-300'
-  ),
-  warning: cn(
-    'bg-amber-500/20',
-    'border border-amber-400/30',
-    'text-amber-300'
-  ),
-  danger: cn(
-    'bg-red-500/20',
-    'border border-red-400/30',
-    'text-red-300'
-  ),
-  info: cn(
-    'bg-blue-500/20',
-    'border border-blue-400/30',
-    'text-blue-300'
-  ),
+  default: 'glass-badge-default',
+  primary: 'glass-badge-primary',
+  success: 'glass-badge-success',
+  warning: 'glass-badge-warning',
+  danger: 'glass-badge-danger',
+  info: 'glass-badge-info',
 };
 
 const sizeStyles = {

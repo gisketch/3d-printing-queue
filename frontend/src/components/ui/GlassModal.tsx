@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { cn, glass, rounded } from '../../glass';
+import { cn, rounded } from '../../glass';
 import { GlassIconButton } from './GlassButton';
 
 export interface GlassModalProps {
@@ -77,15 +77,13 @@ export const GlassModal: React.FC<GlassModalProps> = ({
               'relative z-10 w-full overflow-hidden',
               sizeClasses[size],
               rounded.lg,
-              glass.blur['2xl'],
-              glass.modal,
-              glass.shadow.strong,
+              'glass-modal shadow-[0_12px_48px_rgba(0,0,0,0.4)]',
               className
             )}
           >
             {/* Top highlight line */}
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            
+
             {/* Glow effect */}
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-transparent to-purple-500/10 pointer-events-none" />
 
@@ -130,7 +128,7 @@ export const GlassModalFooter: React.FC<{
   className?: string;
 }> = ({ children, className = '' }) => (
   <div className={cn(
-    'flex gap-3 pt-4 mt-4 border-t border-white/[0.08]',
+    'flex gap-3 pt-4 mt-4',
     className
   )}>
     {children}

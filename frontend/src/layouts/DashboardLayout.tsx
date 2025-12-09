@@ -114,7 +114,7 @@ export const DashboardLayout: React.FC = () => {
                 whileHover={{ x: 4 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setIsHelpModalOpen(true)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-purple-400/80 hover:text-purple-400 hover:bg-purple-500/10 border border-transparent hover:border-purple-500/20 transition-all duration-200"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm glass-sidebar-btn-info transition-all duration-200"
               >
                 <HelpCircle className="w-4 h-4" />
                 Karma System Help
@@ -132,7 +132,7 @@ export const DashboardLayout: React.FC = () => {
               whileHover={{ x: 4 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-red-400/80 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all duration-200"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm glass-sidebar-btn-danger transition-all duration-200"
             >
               <LogOut className="w-4 h-4" />
               Sign Out

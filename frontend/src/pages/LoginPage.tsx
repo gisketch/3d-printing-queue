@@ -106,7 +106,7 @@ export const LoginPage: React.FC = () => {
             </div>
 
             {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-400/20 text-red-300 text-sm">
+              <div className="p-3 rounded-xl glass-alert-danger text-red-300 text-sm">
                 {error}
               </div>
             )}
@@ -170,7 +170,7 @@ export const LoginPage: React.FC = () => {
           <div className="text-center py-4">
             <div className={cn(
               'w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center',
-              'bg-emerald-500/20 border border-emerald-400/30'
+              'glass-alert-success'
             )}>
               <CheckCircle className="w-8 h-8 text-emerald-400" />
             </div>
@@ -185,7 +185,7 @@ export const LoginPage: React.FC = () => {
         ) : (
           <form onSubmit={handleRequestAccess} className="space-y-4">
             {requestError && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-400/20 text-red-300 text-sm">
+              <div className="p-3 rounded-xl glass-alert-danger text-red-300 text-sm">
                 {requestError}
               </div>
             )}

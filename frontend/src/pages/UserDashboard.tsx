@@ -272,7 +272,7 @@ export const UserDashboard: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-4 rounded-xl bg-amber-500/10 border border-amber-400/20"
+                className="p-4 rounded-xl glass-alert-warning"
               >
                 <div className="flex items-center gap-2 text-amber-400 text-sm font-medium mb-2">
                   <AlertCircle className="w-4 h-4" />
@@ -304,14 +304,14 @@ export const UserDashboard: React.FC = () => {
             )}
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.05] text-center">
+              <div className="p-4 rounded-xl glass-sub-card text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Users className="w-4 h-4 text-cyan-400" />
                   <span className="text-2xl font-bold text-white">{queuedJobs.length}</span>
                 </div>
                 <p className="text-xs text-white/50">In Queue</p>
               </div>
-              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.05] text-center">
+              <div className="p-4 rounded-xl glass-sub-card text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Clock className="w-4 h-4 text-amber-400" />
                   <span className="text-2xl font-bold text-white">
@@ -520,7 +520,7 @@ export const UserDashboard: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2"
+                className="p-3 rounded-xl glass-alert-danger text-red-400 text-sm flex items-center gap-2"
               >
                 <AlertCircle className="w-4 h-4" />
                 {submitError}
@@ -557,10 +557,10 @@ export const UserDashboard: React.FC = () => {
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-white/[0.08]" />
+                <span className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-slate-900 px-3 text-white/40">Or</span>
+                <span className="glass-separator-bg px-3 text-white/40">Or</span>
               </div>
             </div>
 
@@ -603,7 +603,7 @@ export const UserDashboard: React.FC = () => {
         className="fixed bottom-6 right-6 z-50 md:hidden"
       >
         <GlassButton
-          variant="glow"
+          variant="primary"
           onClick={() => setShowNewJobModal(true)}
           disabled={hasActiveJob || checkingActive}
           className="!rounded-full !p-4 shadow-lg"

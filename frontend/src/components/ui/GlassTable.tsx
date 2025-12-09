@@ -9,8 +9,7 @@ export interface GlassTableProps {
 
 export const GlassTable: React.FC<GlassTableProps> = ({ children, className = '' }) => (
   <div className={cn(
-    'backdrop-blur-xl bg-white/[0.02]',
-    'border border-white/[0.08]',
+    'glass-card-default',
     'rounded-2xl overflow-hidden',
     className
   )}>
@@ -28,8 +27,7 @@ export const GlassTableHeader: React.FC<{ children: React.ReactNode; className?:
   className = '',
 }) => (
   <thead className={cn(
-    'bg-white/[0.03]',
-    'border-b border-white/[0.08]',
+    'glass-table-header',
     className
   )}>
     {children}

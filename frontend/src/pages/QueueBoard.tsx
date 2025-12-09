@@ -200,8 +200,8 @@ export const QueueBoard: React.FC = () => {
                     transition={{ delay: 0.4 + index * 0.1 }}
                     className={`p-3 rounded-xl ${
                       index === 0 
-                        ? 'bg-amber-500/10 border border-amber-400/20' 
-                        : 'bg-white/[0.03] border border-white/[0.05]'
+                        ? 'glass-alert-warning' 
+                        : 'glass-sub-card'
                     }`}
                   >
                     <div className="flex items-center gap-3">

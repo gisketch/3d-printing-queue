@@ -1,75 +1,34 @@
 import React from 'react';
 import { motion, type HTMLMotionProps } from 'framer-motion';
-import { cn, glass, glassButtonClasses } from '../../glass';
+import { cn } from '../../glass';
 
 export interface GlassButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
   children: React.ReactNode;
-  variant?: 'default' | 'primary' | 'success' | 'danger' | 'ghost' | 'glow';
+  variant?: 'default' | 'primary' | 'success' | 'danger' | 'warning' | 'ghost' | 'secondary';
   size?: 'sm' | 'md' | 'lg' | 'icon';
   disabled?: boolean;
   loading?: boolean;
   className?: string;
 }
 
+// Use CSS component classes from index.css for proper styling
+// These classes are defined outside @layer for higher specificity
 const variantStyles = {
-  default: cn(
-    glass.blur.xl,
-    glass.button,
-    'text-white',
-    'hover:bg-white/[0.12] hover:border-white/[0.20]',
-    'active:bg-white/[0.15]'
-  ),
-  primary: cn(
-    glass.blur.xl,
-    'bg-cyan-500/20',
-    'border border-cyan-400/30',
-    'text-cyan-300',
-    'hover:bg-cyan-500/30 hover:border-cyan-400/50',
-    'active:bg-cyan-500/40',
-    glass.shadow.glow,
-    'hover:shadow-[0_0_30px_rgba(34,211,238,0.25)]'
-  ),
-  success: cn(
-    glass.blur.xl,
-    'bg-emerald-500/20',
-    'border border-emerald-400/30',
-    'text-emerald-300',
-    'hover:bg-emerald-500/30 hover:border-emerald-400/50',
-    'active:bg-emerald-500/40',
-    'shadow-[0_0_20px_rgba(52,211,153,0.25)]',
-    'hover:shadow-[0_0_30px_rgba(52,211,153,0.35)]'
-  ),
-  danger: cn(
-    glass.blur.xl,
-    'bg-red-500/20',
-    'border border-red-400/30',
-    'text-red-300',
-    'hover:bg-red-500/30 hover:border-red-400/50',
-    'active:bg-red-500/40',
-    'shadow-[0_0_20px_rgba(248,113,113,0.15)]'
-  ),
-  ghost: cn(
-    'bg-transparent',
-    'border border-transparent',
-    'text-white/70',
-    'hover:bg-white/[0.06] hover:text-white',
-    'active:bg-white/[0.10]'
-  ),
-  glow: cn(
-    glass.blur.xl,
-    'bg-gradient-to-r from-purple-500/20 to-cyan-500/20',
-    'border border-purple-400/30',
-    'text-white',
-    'hover:from-purple-500/30 hover:to-cyan-500/30 hover:border-purple-400/50',
-    'animate-pulse-glow'
-  ),
+  default: 'glass-btn-default',
+  primary: 'glass-btn-primary',
+  success: 'glass-btn-success',
+  danger: 'glass-btn-danger',
+  warning: 'glass-btn-warning',
+  ghost: 'glass-btn-ghost',
+  secondary: 'glass-btn-secondary',
 };
 
+// Size classes - pure padding/sizing, no color/bg
 const sizeStyles = {
-  sm: glassButtonClasses.sm,
-  md: glassButtonClasses.md,
-  lg: glassButtonClasses.lg,
-  icon: glassButtonClasses.icon,
+  sm: 'px-3 py-1.5 rounded-lg text-sm',
+  md: 'px-4 py-2 rounded-xl text-base',
+  lg: 'px-6 py-3 rounded-2xl text-lg',
+  icon: 'p-2.5 rounded-xl',
 };
 
 export const GlassButton: React.FC<GlassButtonProps> = ({
@@ -83,19 +42,24 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
 }) => {
   return (
     <motion.button
-      whileHover={{ scale: disabled ? 1 : 1.02 }}
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       transition={{ duration: 0.15 }}
       disabled={disabled || loading}
       className={cn(
+        // Layout & positioning
         'relative overflow-hidden',
         'inline-flex items-center justify-center',
-        'font-medium',
+        // Transition
         'transition-all duration-300',
+        // Focus ring
         'focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:ring-offset-2 focus:ring-offset-slate-900',
-        variantStyles[variant],
+        // Size (padding, rounded, text size)
         sizeStyles[size],
+        // Variant (color, bg, border, shadow - from CSS)
+        variantStyles[variant],
+        // Disabled state
         disabled && 'opacity-50 cursor-not-allowed',
+        // Custom classes
         className
       )}
       {...props}
@@ -143,7 +107,6 @@ export const GlassIconButton: React.FC<Omit<GlassButtonProps, 'size'> & { size?:
 
   return (
     <motion.button
-      whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       transition={{ duration: 0.15 }}
       className={cn(

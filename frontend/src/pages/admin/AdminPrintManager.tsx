@@ -261,11 +261,11 @@ export const AdminPrintManager: React.FC = () => {
               </GlassCardHeader>
               <GlassCardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 rounded-xl bg-white/[0.06] border border-white/[0.08]">
+                  <div className="text-center p-4 rounded-xl glass-sub-card">
                     <span className="text-3xl font-bold text-purple-400">{queuedJobs.length}</span>
                     <p className="text-xs text-white/50 mt-1">In Queue</p>
                   </div>
-                  <div className="text-center p-4 rounded-xl bg-white/[0.06] border border-white/[0.08]">
+                  <div className="text-center p-4 rounded-xl glass-sub-card">
                     <span className="text-3xl font-bold text-cyan-400">
                       {totalQueueTime > 0 ? formatDuration(totalQueueTime) : '-'}
                     </span>
@@ -274,7 +274,7 @@ export const AdminPrintManager: React.FC = () => {
                 </div>
 
                 {nextJob && !currentJob && (
-                  <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-400/20">
+                  <div className="p-4 rounded-xl glass-alert-warning">
                     <p className="text-sm font-medium text-white mb-1">Up Next</p>
                     <p className="text-sm text-white/60">{nextJob.project_name}</p>
                     <p className="text-xs text-white/40 mt-1 pb-6">
@@ -415,7 +415,7 @@ export const AdminPrintManager: React.FC = () => {
         hideCloseButton={isStarting}
       >
         <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-white/[0.06] border border-white/[0.08]">
+          <div className="p-4 rounded-xl glass-sub-card">
             <p className="font-medium text-white">{selectedJob?.project_name}</p>
             <p className="text-sm text-white/60 mt-1">
               by {selectedJob?.expand?.user?.name}
@@ -466,7 +466,7 @@ export const AdminPrintManager: React.FC = () => {
           }}
           className="space-y-4"
         >
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-400/20 text-emerald-300 text-sm">
+          <div className="p-3 rounded-xl glass-alert-success text-emerald-300 text-sm">
             The estimated time was {formatDuration(currentJob?.estimated_duration_min || 0)}.
             Adjust if needed.
           </div>
@@ -529,7 +529,7 @@ export const AdminPrintManager: React.FC = () => {
         hideCloseButton={isFailing}
       >
         <div className="space-y-4">
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-400/20 text-amber-300 text-sm">
+          <div className="p-3 rounded-xl glass-alert-warning text-amber-300 text-sm">
             Failed prints don't penalize the user's Karma. They get a free retry.
           </div>
 

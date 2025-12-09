@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, type Variants } from 'framer-motion';
-import { cn, glass, rounded } from '../../glass';
+import { cn, rounded } from '../../glass';
 
 // Animation variants for card entrance
 export const cardVariants: Variants = {
@@ -29,37 +29,13 @@ export interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   animate?: boolean;
 }
 
+// Use CSS component classes from index.css for proper border color handling
 const variantStyles = {
-  default: cn(
-    glass.blur.glass,
-    glass.bg.subtle,
-    glass.border.light,
-    glass.shadow.medium
-  ),
-  subtle: cn(
-    glass.blur.lg,
-    glass.bg.subtle,
-    glass.border.subtle,
-    glass.shadow.subtle
-  ),
-  strong: cn(
-    glass.blur['2xl'],
-    glass.bg.medium,
-    glass.border.medium,
-    glass.shadow.strong
-  ),
-  glow: cn(
-    glass.blur.xl,
-    glass.bg.light,
-    glass.border.glow,
-    glass.shadow.glow
-  ),
-  elevated: cn(
-    glass.blur.glass,
-    glass.bg.medium,
-    glass.border.light,
-    glass.shadow.strong
-  ),
+  default: 'glass-card-default',
+  subtle: 'glass-card-subtle',
+  strong: 'glass-card-strong',
+  glow: 'glass-card-glow',
+  elevated: 'glass-card-elevated',
 };
 
 export const GlassCard: React.FC<GlassCardProps> = ({
@@ -95,7 +71,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
           'relative overflow-hidden',
           rounded.lg,
           variantStyles[variant],
-          hover && glass.cardHover,
+          hover && 'glass-card-hover',
           'transition-[background-color,border-color,box-shadow] duration-300',
           className
         )}
@@ -111,7 +87,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
         'relative overflow-hidden',
         rounded.lg,
         variantStyles[variant],
-        hover && glass.cardHover,
+        hover && 'glass-card-hover',
         'transition-all duration-300',
         className
       )}
@@ -140,7 +116,7 @@ export const GlassCardTitle: React.FC<{
 }> = ({ children, className = '', icon }) => (
   <h3 className={cn('flex items-center gap-3 text-lg font-semibold text-white', className)}>
     {icon && (
-      <span className={cn('p-2', rounded.md, glass.bg.medium, glass.blur.sm)}>
+      <span className={cn('p-2', rounded.md, 'bg-white/[0.10] backdrop-blur-sm')}>
         {icon}
       </span>
     )}
@@ -193,27 +169,27 @@ const statVariantStyles = {
   default: {
     icon: 'text-cyan-400',
     glow: 'rgba(34, 211, 238, 0.5)',
-    border: glass.border.glow,
+    border: 'glass-stat-default',
   },
   success: {
     icon: 'text-emerald-400',
     glow: 'rgba(52, 211, 153, 0.5)',
-    border: 'border border-emerald-400/30',
+    border: 'glass-stat-success',
   },
   warning: {
     icon: 'text-amber-400',
     glow: 'rgba(251, 191, 36, 0.5)',
-    border: 'border border-amber-400/30',
+    border: 'glass-stat-warning',
   },
   danger: {
     icon: 'text-red-400',
     glow: 'rgba(248, 113, 113, 0.5)',
-    border: 'border border-red-400/30',
+    border: 'glass-stat-danger',
   },
   info: {
     icon: 'text-purple-400',
     glow: 'rgba(192, 132, 252, 0.5)',
-    border: 'border border-purple-400/30',
+    border: 'glass-stat-info',
   },
 };
 
@@ -240,11 +216,10 @@ export const StatCard: React.FC<StatCardProps> = ({
         className={cn(
           'relative overflow-hidden h-full',
           rounded.lg,
-          glass.blur.xl,
-          glass.bg.subtle,
+          'backdrop-blur-xl bg-white/[0.03]',
           styles.border,
           'transition-all duration-300',
-          glass.cardHover,
+          'glass-card-hover',
           className
         )}
       >

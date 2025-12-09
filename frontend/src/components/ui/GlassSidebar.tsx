@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { cn, glass, rounded } from '../../glass';
+import { cn, rounded } from '../../glass';
 
 // Animation variants for sidebar entrance
 const sidebarVariants = {
@@ -45,12 +45,8 @@ export const GlassSidebar: React.FC<SidebarProps> = ({ children, className = '' 
       initial="hidden"
       animate="visible"
       className={cn(
-        'w-64 h-screen flex flex-col',
-        glass.blur['2xl'],
-        glass.bg.subtle,
-        'border-r',
-        glass.border.light,
-        glass.shadow.medium,
+        'w-64 h-screen flex flex-col overflow-hidden',
+        'glass-sidebar',
         className
       )}
     >
@@ -67,7 +63,7 @@ export const GlassSidebarHeader: React.FC<{
   <motion.div
     variants={sidebarItemVariants}
     className={cn(
-      'p-5 border-b border-white/[0.08]',
+      'p-5 border-b glass-separator',
       className
     )}
   >
@@ -83,7 +79,7 @@ export const GlassSidebarContent: React.FC<{
   <motion.div
     variants={sidebarItemVariants}
     className={cn(
-      'flex-1 overflow-y-auto p-4',
+      'flex-1 overflow-y-auto overflow-x-hidden p-4',
       'scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent',
       className
     )}
@@ -100,7 +96,7 @@ export const GlassSidebarFooter: React.FC<{
   <motion.div
     variants={sidebarItemVariants}
     className={cn(
-      'p-4 border-t border-white/[0.08]',
+      'p-4 border-t glass-separator',
       className
     )}
   >
@@ -155,18 +151,18 @@ export const GlassSidebarItem: React.FC<SidebarItemProps> = ({
     className={cn(
       'w-full flex items-center gap-3 px-3 py-2.5',
       rounded.md,
-      'text-sm font-medium',
+      'text-sm',
       'transition-all duration-200',
       active
-        ? cn(glass.bg.medium, glass.border.glow, 'text-purple-400', glass.shadow.glow)
-        : 'bg-transparent border border-transparent text-white/70 hover:bg-white/[0.06] hover:text-white',
+        ? 'glass-sidebar-item-active'
+        : 'text-white/70 hover:glass-sidebar-item-hover border border-transparent',
       className
     )}
   >
     {icon && (
       <span className={cn(
         'w-5 h-5',
-        active ? 'text-purple-400' : 'text-white/50'
+        active ? 'text-purple-300' : 'text-white/50'
       )}>
         {icon}
       </span>
@@ -196,18 +192,18 @@ export const GlassSidebarNavLink: React.FC<SidebarNavLinkProps> = ({
         whileTap={{ scale: 0.98 }}
         className={cn(
           'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl',
-          'text-sm font-medium',
+          'text-sm',
           'transition-all duration-200',
           isActive
-            ? 'bg-white/[0.10] border border-purple-400/30 text-purple-400 shadow-[0_0_20px_rgba(34,211,238,0.1)]'
-            : 'bg-transparent border border-transparent text-white/70 hover:bg-white/[0.06] hover:text-white',
+            ? 'glass-sidebar-item-active'
+            : 'text-white/70 border border-transparent hover:text-white hover:bg-gradient-to-r hover:from-white/[0.08] hover:to-white/[0.04] hover:border-white/[0.12]',
           className
         )}
       >
         {icon && (
           <span className={cn(
             'w-5 h-5 flex items-center justify-center',
-            isActive ? 'text-purple-400' : 'text-white/50'
+            isActive ? 'text-purple-300' : 'text-white/50'
           )}>
             {icon}
           </span>

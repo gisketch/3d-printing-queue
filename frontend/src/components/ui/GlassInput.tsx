@@ -37,16 +37,10 @@ export const GlassInput = forwardRef<HTMLInputElement, GlassInputProps>(({
           ref={ref}
           className={cn(
             'w-full px-4 py-2.5',
-            'backdrop-blur-xl',
-            variant === 'default' ? 'bg-white/[0.05]' : 'bg-white/[0.08]',
-            'border border-white/[0.10]',
+            'glass-input',
             'rounded-xl',
-            'text-white placeholder-white/40',
-            'outline-none',
             'transition-all duration-200',
-            'focus:border-cyan-400/50 focus:bg-white/[0.08]',
-            'focus:ring-2 focus:ring-cyan-400/20',
-            error && 'border-red-400/50 focus:border-red-400/50 focus:ring-red-400/20',
+            error && 'glass-input-error',
             icon ? 'pl-10' : '',
             props.disabled && 'opacity-50 cursor-not-allowed',
             className
@@ -95,16 +89,11 @@ export const GlassTextarea = forwardRef<HTMLTextAreaElement, GlassTextareaProps>
         ref={ref}
         className={cn(
           'w-full px-4 py-3',
-          'backdrop-blur-xl bg-white/[0.05]',
-          'border border-white/[0.10]',
+          'glass-input',
           'rounded-xl',
-          'text-white placeholder-white/40',
-          'outline-none',
           'transition-all duration-200',
-          'focus:border-cyan-400/50 focus:bg-white/[0.08]',
-          'focus:ring-2 focus:ring-cyan-400/20',
           'resize-none',
-          error && 'border-red-400/50',
+          error && 'glass-input-error',
           props.disabled && 'opacity-50 cursor-not-allowed',
           className
         )}
@@ -153,18 +142,13 @@ export const GlassSelect = forwardRef<HTMLSelectElement, GlassSelectProps>(({
         ref={ref}
         className={cn(
           'w-full px-4 py-2.5',
-          'backdrop-blur-xl bg-white/[0.05]',
-          'border border-white/[0.10]',
+          'glass-input',
           'rounded-xl',
-          'text-white',
-          'outline-none',
           'transition-all duration-200',
-          'focus:border-cyan-400/50 focus:bg-white/[0.08]',
-          'focus:ring-2 focus:ring-cyan-400/20',
           'cursor-pointer',
           // Style the dropdown
           '[&>option]:bg-slate-900 [&>option]:text-white',
-          error && 'border-red-400/50',
+          error && 'glass-input-error',
           props.disabled && 'opacity-50 cursor-not-allowed',
           className
         )}
