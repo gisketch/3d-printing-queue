@@ -83,9 +83,12 @@ export const glassStyles = {
 };
 
 
-// Utility to combine class names (simple version)
-export function cn(...classes: (string | undefined | false | null)[]): string {
-  return classes.filter(Boolean).join(' ');
+// Utility to combine class names (robust version with tailwind-merge)
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
 }
 
 // ============================================
