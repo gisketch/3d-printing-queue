@@ -135,7 +135,7 @@ export const LoginPage: React.FC = () => {
               <GlassButton
                 type="submit"
                 variant="primary"
-                className="w-full"
+                className="w-full mb-4"
                 disabled={isLoading}
                 loading={isLoading}
               >
@@ -175,10 +175,10 @@ export const LoginPage: React.FC = () => {
               <CheckCircle className="w-8 h-8 text-emerald-400" />
             </div>
             <p className="text-white mb-2">Your request has been submitted!</p>
-            <p className="text-sm text-white/50 mb-6">
+            <p className="text-sm text-white/50 mb-4">
               An admin will review your request and send you login credentials. Message Glenn, Stephen, or Julius.
             </p>
-            <GlassButton onClick={closeRequestModal} variant="primary" className="w-full">
+            <GlassButton onClick={closeRequestModal} variant="primary" className="w-full mt-4">
               Got it
             </GlassButton>
           </div>
