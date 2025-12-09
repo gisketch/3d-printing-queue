@@ -168,7 +168,7 @@ export const LoginPage: React.FC = () => {
             </div>
             <p className="text-foreground mb-2">Your request has been submitted!</p>
             <p className="text-sm text-muted-foreground mb-6">
-              An admin will review your request and send you login credentials via Slack/Teams.
+              An admin will review your request and send you login credentials. Message Glenn, Stephen, or Julius.
             </p>
             <Button onClick={closeRequestModal} className="w-full">
               Got it

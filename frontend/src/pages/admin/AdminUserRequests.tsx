@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import {
   Card,
   CardContent,
+  CardHeader,
+  CardTitle,
   Button,
   Textarea,
   FormField,
+  Badge,
   Table,
   TableHeader,
   TableBody,
@@ -12,9 +15,11 @@ import {
   TableHead,
   TableCell,
 } from 'gisketch-neumorphism';
+import { motion } from 'framer-motion';
 import { Modal } from '../../components/Modal';
+import { PageTransition, AnimatedCard } from '../../components/AnimatedComponents';
 import { useUserRequests } from '../../hooks/useUsers';
-import { Check, X, Copy, Loader2 } from 'lucide-react';
+import { Check, X, Copy, Loader2, Users, UserPlus } from 'lucide-react';
 import type { UserRequest } from '../../types';
 
 export const AdminUserRequests: React.FC = () => {
@@ -92,69 +97,109 @@ export const AdminUserRequests: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Account Requests</h1>
-        <p className="text-muted-foreground">
-          Review and approve new user account requests
-        </p>
-      </div>
+    <PageTransition>
+      <div className="space-y-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Account Requests</h1>
+              <p className="text-muted-foreground">
+                Review and approve new user account requests
+              </p>
+            </div>
+            {requests.length > 0 && (
+              <Badge variant="warning" className="text-lg px-4 py-2">
+                {requests.length} Pending
+              </Badge>
+            )}
+          </div>
+        </motion.div>
 
-      {isLoading ? (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
-          </CardContent>
-        </Card>
-      ) : requests.length === 0 ? (
-        <Card variant="pressed">
-          <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">No pending account requests</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Full Name</TableHead>
-                <TableHead>Username</TableHead>
-                <TableHead>Requested</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {requests.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell className="font-medium">{request.full_name}</TableCell>
-                  <TableCell>{request.desired_username}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(request.created).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="success"
-                        onClick={() => handleApprove(request)}
-                      >
-                        <Check className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleReject(request)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
+        <AnimatedCard delay={0.1}>
+          {isLoading ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
+                <p className="text-muted-foreground mt-2">Loading requests...</p>
+              </CardContent>
+            </Card>
+          ) : requests.length === 0 ? (
+            <Card variant="pressed">
+              <CardContent className="py-12 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                  <UserPlus className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground">No pending account requests</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  New user requests will appear here
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Pending Requests
+                </CardTitle>
+              </CardHeader>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Full Name</TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Requested</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {requests.map((request, index) => (
+                    <motion.tr
+                      key={request.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="border-b border-muted/20 last:border-0"
+                    >
+                      <TableCell className="font-medium">{request.full_name}</TableCell>
+                      <TableCell>{request.desired_username}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(request.created).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="success"
+                            onClick={() => handleApprove(request)}
+                            className="gap-1"
+                          >
+                            <Check className="w-4 h-4" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleReject(request)}
+                            className="gap-1"
+                          >
+                            <X className="w-4 h-4" />
+                            Reject
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          )}
+        </AnimatedCard>
 
       {/* Approval Modal */}
       <Modal
@@ -167,7 +212,7 @@ export const AdminUserRequests: React.FC = () => {
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-success/10 border border-success/20">
               <p className="text-sm text-success mb-3">
-                Account created successfully! Send these credentials to the user via Slack/Teams.
+                Account created successfully! Send these credentials to the user.
               </p>
               <div className="space-y-2 font-mono text-sm">
                 <div>
@@ -270,6 +315,7 @@ export const AdminUserRequests: React.FC = () => {
           </div>
         </div>
       </Modal>
-    </div>
+      </div>
+    </PageTransition>
   );
 };

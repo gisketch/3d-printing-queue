@@ -2,13 +2,29 @@ import React from 'react';
 import {
   Card,
   CardContent,
-  Progress,
+  CardHeader,
+  CardTitle,
+  Badge,
+  Separator,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
   Avatar,
 } from 'gisketch-neumorphism';
+import { motion } from 'framer-motion';
+import { 
+  PageTransition, 
+  AnimatedCard, 
+  PulsingDot,
+  AnimatedProgress,
+} from '../components/AnimatedComponents';
 import { useJobs } from '../hooks/useJobs';
 import { formatDuration, formatRelativeTime } from '../lib/utils';
 import type { Job } from '../types';
-import { Printer, Clock, Users, Loader2 } from 'lucide-react';
+import { Printer, Clock, Users, Loader2, CheckCircle2, History } from 'lucide-react';
 
 export const QueueBoard: React.FC = () => {
   // Get all active jobs
@@ -17,8 +33,6 @@ export const QueueBoard: React.FC = () => {
   const { jobs: completedJobs, isLoading: loadingCompleted } = useJobs({ status: 'completed' });
 
   const currentJob = printingJobs[0] || null;
-  const nextJob = queuedJobs[0] || null;
-  const remainingQueue = queuedJobs.slice(1);
   const recentCompleted = completedJobs.slice(0, 5);
 
   const isLoading = loadingPrinting || loadingQueued || loadingCompleted;
@@ -38,164 +52,325 @@ export const QueueBoard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          icon={<Printer className="w-5 h-5" />}
-          label="Status"
-          value={currentJob ? 'Printing' : 'Idle'}
-          variant={currentJob ? 'success' : 'default'}
-        />
-        <StatCard
-          icon={<Users className="w-5 h-5" />}
-          label="In Queue"
-          value={queuedJobs.length.toString()}
-        />
-        <StatCard
-          icon={<Clock className="w-5 h-5" />}
-          label="Est. Wait Time"
-          value={totalQueueTime > 0 ? formatDuration(totalQueueTime) : '-'}
-        />
-      </div>
-
-      {/* Queue Board */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {/* Printing Now */}
-        <QueueColumn
-          title="Printing Now"
-          color="success"
-          isEmpty={!currentJob}
-          emptyText="Printer is idle"
+    <PageTransition>
+      <div className="space-y-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
         >
-          {currentJob && <JobCard job={currentJob} isPrinting />}
-        </QueueColumn>
+          <h1 className="text-2xl font-bold text-foreground">Print Queue</h1>
+          <p className="text-muted-foreground">
+            Live view of all print jobs
+          </p>
+        </motion.div>
 
-        {/* Up Next */}
-        <QueueColumn
-          title="Up Next"
-          color="warning"
-          isEmpty={!nextJob}
-          emptyText="Queue is empty"
-        >
-          {nextJob && <JobCard job={nextJob} />}
-        </QueueColumn>
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <AnimatedCard delay={0.1}>
+            <Card>
+              <CardContent className="py-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 rounded-xl ${currentJob ? 'bg-success/10' : 'bg-muted/50'}`}>
+                    <Printer className={`w-6 h-6 ${currentJob ? 'text-success' : 'text-muted-foreground'}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <p className={`text-xl font-bold ${currentJob ? 'text-success' : 'text-foreground'}`}>
+                      {currentJob ? 'Printing' : 'Idle'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </AnimatedCard>
 
-        {/* The Queue */}
-        <QueueColumn
-          title="The Queue"
-          color="primary"
-          isEmpty={remainingQueue.length === 0}
-          emptyText="No jobs waiting"
-        >
-          {remainingQueue.map((job, index) => (
-            <JobCard key={job.id} job={job} position={index + 2} />
-          ))}
-        </QueueColumn>
+          <AnimatedCard delay={0.15}>
+            <Card>
+              <CardContent className="py-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-primary/10">
+                    <Users className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">In Queue</p>
+                    <p className="text-xl font-bold text-foreground">{queuedJobs.length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </AnimatedCard>
 
-        {/* Completed */}
-        <QueueColumn
-          title="Completed"
-          color="default"
-          isEmpty={recentCompleted.length === 0}
-          emptyText="No completed jobs"
-        >
-          {recentCompleted.map((job) => (
-            <JobCard key={job.id} job={job} isCompleted />
-          ))}
-        </QueueColumn>
-      </div>
-    </div>
-  );
-};
-
-// Stat Card Component
-interface StatCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  variant?: 'default' | 'success' | 'warning' | 'primary';
-}
-
-const StatCard: React.FC<StatCardProps> = ({ icon, label, value, variant = 'default' }) => {
-  const colorClasses = {
-    default: 'text-foreground',
-    success: 'text-success',
-    warning: 'text-warning',
-    primary: 'text-primary',
-  };
-
-  return (
-    <Card>
-      <CardContent className="py-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-xl bg-muted/50 ${colorClasses[variant]}`}>
-            {icon}
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <p className={`text-xl font-semibold ${colorClasses[variant]}`}>{value}</p>
-          </div>
+          <AnimatedCard delay={0.2}>
+            <Card>
+              <CardContent className="py-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-warning/10">
+                    <Clock className="w-6 h-6 text-warning" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Est. Wait</p>
+                    <p className="text-xl font-bold text-foreground">
+                      {totalQueueTime > 0 ? formatDuration(totalQueueTime) : '-'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </AnimatedCard>
         </div>
-      </CardContent>
-    </Card>
-  );
-};
 
-// Queue Column Component
-interface QueueColumnProps {
-  title: string;
-  color: 'success' | 'warning' | 'primary' | 'default';
-  isEmpty: boolean;
-  emptyText: string;
-  children: React.ReactNode;
-}
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Currently Printing - Takes 2 columns */}
+          <AnimatedCard delay={0.25} className="lg:col-span-2">
+            <Card className={currentJob ? 'border-l-4 border-l-green-500' : ''}>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-muted/50">
+                      <Printer className="w-6 h-6 text-foreground" />
+                    </div>
+                    Printing Now
+                  </span>
+                  {currentJob && (
+                    <Badge variant="success">
+                      <span className="flex items-center gap-2">
+                        <PulsingDot color="success" size="sm" />
+                        Active
+                      </span>
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {currentJob ? (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4">
+                      <JobAvatar job={currentJob} size="lg" />
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-foreground">
+                          {currentJob.project_name}
+                        </h3>
+                        <p className="text-muted-foreground">
+                          by {currentJob.expand?.user?.name || 'Unknown'}
+                        </p>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            Est. {formatDuration(currentJob.estimated_duration_min || 0)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-const QueueColumn: React.FC<QueueColumnProps> = ({
-  title,
-  color,
-  isEmpty,
-  emptyText,
-  children,
-}) => {
-  const colorClasses = {
-    success: 'bg-success',
-    warning: 'bg-warning',
-    primary: 'bg-primary',
-    default: 'bg-muted-foreground',
-  };
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="text-foreground">In Progress</span>
+                      </div>
+                      <AnimatedProgress value={50} />
+                      <p className="text-xs text-muted-foreground">
+                        Started {formatRelativeTime(currentJob.updated)}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                      <Printer className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-lg text-muted-foreground">Printer is idle</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {queuedJobs.length > 0 ? 'Next job will start soon' : 'No jobs in queue'}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </AnimatedCard>
 
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <span className={`w-3 h-3 rounded-full ${colorClasses[color]}`} />
-        <h3 className="font-semibold text-foreground">{title}</h3>
-      </div>
+          {/* Up Next */}
+          <AnimatedCard delay={0.3}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-warning" />
+                  Up Next
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {queuedJobs.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">Queue is empty</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {queuedJobs.slice(0, 3).map((job, index) => (
+                      <motion.div
+                        key={job.id}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className={`p-3 rounded-xl ${index === 0 ? 'bg-warning/10 border border-warning/20' : 'bg-muted/30'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-bold text-muted-foreground">
+                            #{index + 1}
+                          </span>
+                          <JobAvatar job={job} size="sm" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground truncate">
+                              {job.project_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatDuration(job.estimated_duration_min || 0)}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                    {queuedJobs.length > 3 && (
+                      <p className="text-center text-sm text-muted-foreground">
+                        +{queuedJobs.length - 3} more in queue
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </AnimatedCard>
+        </div>
 
-      <div className="space-y-3 min-h-[200px]">
-        {isEmpty ? (
-          <Card variant="pressed">
-            <CardContent className="py-8 text-center">
-              <p className="text-sm text-muted-foreground">{emptyText}</p>
-            </CardContent>
+        <Separator />
+
+        {/* Queue Table */}
+        <AnimatedCard delay={0.35}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Full Queue
+                {queuedJobs.length > 0 && (
+                  <Badge variant="primary" className="ml-2">{queuedJobs.length}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            {queuedJobs.length === 0 ? (
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">No jobs waiting</p>
+              </CardContent>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16">#</TableHead>
+                    <TableHead>Project</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Est. Duration</TableHead>
+                    <TableHead>Queued</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {queuedJobs.map((job, index) => (
+                    <motion.tr
+                      key={job.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.03 }}
+                      className="border-b border-muted/20 last:border-0"
+                    >
+                      <TableCell className="font-bold text-muted-foreground">
+                        {index + 1}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <JobAvatar job={job} size="sm" />
+                          <span className="font-medium">{job.project_name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {job.expand?.user?.name || 'Unknown'}
+                      </TableCell>
+                      <TableCell>{formatDuration(job.estimated_duration_min || 0)}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatRelativeTime(job.created)}
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </Card>
-        ) : (
-          children
-        )}
+        </AnimatedCard>
+
+        {/* Recently Completed */}
+        <AnimatedCard delay={0.4}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="w-5 h-5" />
+                Recently Completed
+              </CardTitle>
+            </CardHeader>
+            {recentCompleted.length === 0 ? (
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">No completed jobs yet</p>
+              </CardContent>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Project</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Completed</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentCompleted.map((job, index) => (
+                    <motion.tr
+                      key={job.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.03 }}
+                      className="border-b border-muted/20 last:border-0"
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <CheckCircle2 className="w-4 h-4 text-success" />
+                          <span className="font-medium">{job.project_name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {job.expand?.user?.name || 'Unknown'}
+                      </TableCell>
+                      <TableCell>
+                        {formatDuration(job.actual_duration_min || job.estimated_duration_min || 0)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatRelativeTime(job.updated)}
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </Card>
+        </AnimatedCard>
       </div>
-    </div>
+    </PageTransition>
   );
 };
 
-// Job Card Component
-interface JobCardProps {
+// Job Avatar Component
+interface JobAvatarProps {
   job: Job;
-  isPrinting?: boolean;
-  isCompleted?: boolean;
-  position?: number;
+  size?: 'sm' | 'md' | 'lg';
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job, isPrinting, isCompleted, position }) => {
+const JobAvatar: React.FC<JobAvatarProps> = ({ job, size = 'md' }) => {
   const userName = job.expand?.user?.name || 'Unknown';
   const initials = userName
     .split(' ')
@@ -204,48 +379,17 @@ const JobCard: React.FC<JobCardProps> = ({ job, isPrinting, isCompleted, positio
     .toUpperCase()
     .slice(0, 2);
 
+  const sizeClasses = {
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-14 h-14 text-lg',
+  };
+
   return (
-    <Card className={isPrinting ? 'border-l-4 border-l-success' : ''}>
-      <CardContent className="py-4">
-        <div className="flex items-start gap-3">
-          {position && (
-            <span className="text-lg font-bold text-muted-foreground">#{position}</span>
-          )}
-
-          <Avatar size="sm">
-            <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary text-xs font-medium">
-              {initials}
-            </div>
-          </Avatar>
-
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-foreground truncate">{job.project_name}</p>
-            <p className="text-xs text-muted-foreground">{userName}</p>
-
-            {!isCompleted && job.estimated_duration_min && (
-              <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                {formatDuration(job.estimated_duration_min)}
-              </div>
-            )}
-
-            {isCompleted && job.actual_duration_min && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {formatDuration(job.actual_duration_min)} • {formatRelativeTime(job.updated)}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {isPrinting && (
-          <div className="mt-3">
-            <Progress value={50} className="h-1.5" />
-            <p className="text-xs text-muted-foreground mt-1">
-              Started {formatRelativeTime(job.updated)}
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <Avatar className={sizeClasses[size]}>
+      <div className={`w-full h-full flex items-center justify-center bg-primary/10 text-primary font-medium ${sizeClasses[size]}`}>
+        {initials}
+      </div>
+    </Avatar>
   );
 };

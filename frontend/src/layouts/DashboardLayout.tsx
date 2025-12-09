@@ -51,8 +51,8 @@ export const DashboardLayout: React.FC = () => {
               <Printer className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="font-bold text-foreground">Netzon 3D</h2>
-              <p className="text-xs text-muted-foreground">Print Queue</p>
+              <h2 className="font-bold text-foreground">Netzon</h2>
+            <p className="text-xs text-muted-foreground">3D Print Queue</p>
             </div>
           </div>
         </SidebarHeader>
@@ -61,7 +61,7 @@ export const DashboardLayout: React.FC = () => {
           {/* User Navigation */}
           <SidebarGroup>
             <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <NavLink to="/dashboard">
                 {({ isActive }) => (
                   <SidebarItem active={isActive}>
@@ -85,7 +85,7 @@ export const DashboardLayout: React.FC = () => {
           {isAdmin && (
             <SidebarGroup>
               <SidebarGroupLabel>Admin</SidebarGroupLabel>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <NavLink to="/admin/review">
                   {({ isActive }) => (
                     <SidebarItem active={isActive}>
