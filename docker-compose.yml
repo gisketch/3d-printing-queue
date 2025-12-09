@@ -1,0 +1,35 @@
+services:
+  # 1. PocketBase Backend
+  backend:
+    image: alpine:latest
+    container_name: netzon-queue-backend
+    restart: unless-stopped
+    command: /pb/pocketbase serve --http=0.0.0.0:8090
+    ports:
+      - "${PB_PORT}:8090"
+    volumes:
+      # Mount data so you don't lose DB on restart
+      - ./backend/pb_data:/pb/pb_data
+      # Mount hooks so you can edit logic without rebuilding
+      - ./backend/pb_hooks:/pb/pb_hooks
+    # Setup script to download PB automatically
+    entrypoint: |
+      /bin/sh -c "apk add --no-cache unzip ca-certificates && \
+      if [ ! -f /pb/pocketbase ]; then \
+        wget https://github.com/pocketbase/pocketbase/releases/download/v0.22.0/pocketbase_0.22.0_linux_amd64.zip -O /tmp/pb.zip && \
+        unzip /tmp/pb.zip -d /pb/; \
+      fi && \
+      /pb/pocketbase serve --http=0.0.0.0:8090"
+
+  # 2. React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_POCKETBASE_URL=${BACKEND_URL}
+    container_name: netzon-queue-frontend
+    restart: unless-stopped
+    ports:
+      - "${FE_PORT}:80"
+    depends_on:
+      - backend

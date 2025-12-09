@@ -1,0 +1,15 @@
+# .gitignore
+
+# 1. Ignore the Environment Variables
+.env
+
+# 2. Ignore the actual Database (IMPORTANT)
+backend/pb_data/
+
+# 3. Ignore node_modules if you run npm install locally
+frontend/node_modules/
+frontend/dist/
+
+# 4. OS junk
+.DS_Store
+Thumbs.db
