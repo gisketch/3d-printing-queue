@@ -1,44 +1,42 @@
 import React, { useState } from 'react';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  Button,
-  Input,
-  Textarea,
-  FormField,
-  Badge,
-  Separator,
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from 'gisketch-neumorphism';
 import { motion } from 'framer-motion';
-import { Modal } from '../../components/Modal';
-import { 
-  PageTransition, 
-  AnimatedCard, 
-  PulsingDot,
-  AnimatedProgress,
-} from '../../components/AnimatedComponents';
+import {
+  GlassCard,
+  GlassCardHeader,
+  GlassCardTitle,
+  GlassCardContent,
+  GlassTable,
+  GlassTableHeader,
+  GlassTableBody,
+  GlassTableRow,
+  GlassTableHead,
+  GlassTableCell,
+  GlassBadge,
+  GlassButton,
+  GlassModal,
+  GlassModalFooter,
+  GlassInput,
+  GlassTextarea,
+  GlassFormField,
+  GlassSeparator,
+  GlassProgress,
+  StatCard,
+} from '../../components/ui';
 import { useJobs } from '../../hooks/useJobs';
 import { startPrinting, completeJob, failJob } from '../../services/jobService';
 import { formatDuration, formatRelativeTime } from '../../lib/utils';
 import type { Job } from '../../types';
-import { 
-  Play, 
-  CheckCircle2, 
-  XCircle, 
-  Loader2, 
-  Clock, 
-  User, 
+import {
+  Play,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Clock,
+  User,
   Printer,
   ListOrdered,
   History,
+  Zap,
 } from 'lucide-react';
 
 export const AdminPrintManager: React.FC = () => {
@@ -142,448 +140,428 @@ export const AdminPrintManager: React.FC = () => {
   const totalQueueTime = queuedJobs.reduce((acc, job) => acc + (job.estimated_duration_min || 0), 0);
 
   return (
-    <PageTransition>
-      <div className="space-y-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <h1 className="text-2xl font-bold text-foreground">Print Manager</h1>
-          <p className="text-muted-foreground">
-            Manage the physical printer and queue execution
-          </p>
-        </motion.div>
+    <div className="space-y-6">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <h1 className="text-2xl font-bold text-white">Print Manager</h1>
+        <p className="text-white/60">
+          Manage the physical printer and queue execution
+        </p>
+      </motion.div>
 
-        {isLoading ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
-              <p className="text-muted-foreground mt-2">Loading...</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {/* Main Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Currently Printing - Takes 2 columns */}
-              <AnimatedCard delay={0.1} className="lg:col-span-2">
-                <Card className={currentJob ? 'border-l-4 border-l-success' : ''}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-muted/50">
-                          <Printer className="w-6 h-6 text-foreground" />
+      {isLoading ? (
+        <GlassCard>
+          <div className="py-12 text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-white/40" />
+            <p className="text-white/60 mt-2">Loading...</p>
+          </div>
+        </GlassCard>
+      ) : (
+        <>
+          {/* Main Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Currently Printing - Takes 2 columns */}
+            <GlassCard
+              delay={0.1}
+              variant={currentJob ? 'glow' : 'default'}
+              className="lg:col-span-2"
+            >
+              <GlassCardHeader>
+                <div className="flex items-center justify-between">
+                  <GlassCardTitle icon={<Printer className="w-6 h-6 text-cyan-400" />}>
+                    Currently Printing
+                  </GlassCardTitle>
+                  <GlassBadge variant={currentJob ? 'success' : 'default'} pulse={!!currentJob}>
+                    {currentJob ? 'Active' : 'Idle'}
+                  </GlassBadge>
+                </div>
+              </GlassCardHeader>
+              <GlassCardContent>
+                {currentJob ? (
+                  <div className="space-y-6">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-xl font-semibold text-white">
+                          {currentJob.project_name}
+                        </h3>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-white/60">
+                          <span className="flex items-center gap-1">
+                            <User className="w-4 h-4" />
+                            {currentJob.expand?.user?.name}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            Est. {formatDuration(currentJob.estimated_duration_min || 0)}
+                          </span>
+                          <span className="text-cyan-400">₱{currentJob.price_pesos?.toFixed(2)}</span>
                         </div>
-                        Currently Printing
-                      </span>
-                      <Badge variant={currentJob ? 'success' : 'default'}>
-                        <span className="flex items-center gap-2">
-                          {currentJob && <PulsingDot color="success" size="sm" />}
-                          {currentJob ? 'Active' : 'Idle'}
-                        </span>
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {currentJob ? (
-                      <div className="space-y-6">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="text-xl font-semibold text-foreground">
-                              {currentJob.project_name}
-                            </h3>
-                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <User className="w-4 h-4" />
-                                {currentJob.expand?.user?.name}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-4 h-4" />
-                                Est. {formatDuration(currentJob.estimated_duration_min || 0)}
-                              </span>
-                              <span>₱{currentJob.price_pesos?.toFixed(2)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Progress</span>
-                            <span className="text-foreground">In Progress</span>
-                          </div>
-                          <AnimatedProgress value={50} />
-                          <p className="text-xs text-muted-foreground">
-                            Started {formatRelativeTime(currentJob.updated)}
-                          </p>
-                        </div>
-
-                        <div className="flex gap-3">
-                          <Button
-                            variant="success"
-                            className="flex-1 gap-2"
-                            onClick={handleComplete}
-                          >
-                            <CheckCircle2 className="w-4 h-4" />
-                            Mark Complete
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            className="flex-1 gap-2"
-                            onClick={handleFail}
-                          >
-                            <XCircle className="w-4 h-4" />
-                            Mark Failed
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
-                          <Printer className="w-8 h-8 text-muted-foreground" />
-                        </div>
-                        <p className="text-muted-foreground mb-4">No job currently printing</p>
-                        {nextJob && (
-                          <Button
-                            variant="primary"
-                            className="gap-2"
-                            onClick={() => handleStartPrint(nextJob)}
-                          >
-                            <Play className="w-4 h-4" />
-                            Start Next Job
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </AnimatedCard>
-
-              {/* Queue Stats Card */}
-              <AnimatedCard delay={0.2}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-muted/50">
-                        <ListOrdered className="w-5 h-5 text-primary" />
-                      </div>
-                      Queue Stats
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-4 rounded-xl bg-muted/30">
-                        <span className="text-3xl font-bold text-foreground">{queuedJobs.length}</span>
-                        <p className="text-xs text-muted-foreground mt-1">In Queue</p>
-                      </div>
-                      <div className="text-center p-4 rounded-xl bg-muted/30">
-                        <span className="text-3xl font-bold text-foreground">
-                          {totalQueueTime > 0 ? formatDuration(totalQueueTime) : '-'}
-                        </span>
-                        <p className="text-xs text-muted-foreground mt-1">Total Time</p>
                       </div>
                     </div>
 
-                    {nextJob && !currentJob && (
-                      <div className="p-4 rounded-xl bg-warning/10 border border-warning/20">
-                        <p className="text-sm font-medium text-foreground mb-1">Up Next</p>
-                        <p className="text-sm text-muted-foreground">{nextJob.project_name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          by {nextJob.expand?.user?.name}
-                        </p>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          className="w-full mt-3 gap-2"
-                          onClick={() => handleStartPrint(nextJob)}
-                        >
-                          <Play className="w-4 h-4" />
-                          Start Print
-                        </Button>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/60">Progress</span>
+                        <span className="text-white">In Progress</span>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </AnimatedCard>
-            </div>
+                      <GlassProgress value={50} variant="glow" />
+                      <p className="text-xs text-white/40">
+                        Started {formatRelativeTime(currentJob.updated)}
+                      </p>
+                    </div>
 
-            <Separator />
-
-            {/* Queue Table */}
-            <AnimatedCard delay={0.3}>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ListOrdered className="w-5 h-5" />
-                    Print Queue
-                    {queuedJobs.length > 0 && (
-                      <Badge variant="primary" className="ml-2">{queuedJobs.length}</Badge>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                {queuedJobs.length === 0 ? (
-                  <CardContent className="py-8 text-center">
-                    <p className="text-muted-foreground">Queue is empty</p>
-                  </CardContent>
+                    <div className="flex gap-3">
+                      <GlassButton
+                        variant="success"
+                        className="flex-1"
+                        onClick={handleComplete}
+                      >
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                        Mark Complete
+                      </GlassButton>
+                      <GlassButton
+                        variant="danger"
+                        className="flex-1"
+                        onClick={handleFail}
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Mark Failed
+                      </GlassButton>
+                    </div>
+                  </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-16">#</TableHead>
-                        <TableHead>Project</TableHead>
-                        <TableHead>User</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {queuedJobs.map((job, index) => (
-                        <motion.tr
-                          key={job.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="border-b border-muted/20 last:border-0"
-                        >
-                          <TableCell className="font-bold text-muted-foreground">
-                            {index + 1}
-                          </TableCell>
-                          <TableCell className="font-medium">{job.project_name}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {job.expand?.user?.name}
-                          </TableCell>
-                          <TableCell>{formatDuration(job.estimated_duration_min || 0)}</TableCell>
-                          <TableCell>₱{job.price_pesos?.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">
-                            {index === 0 && !currentJob && (
-                              <Button
-                                size="sm"
-                                variant="primary"
-                                onClick={() => handleStartPrint(job)}
-                                className="gap-1"
-                              >
-                                <Play className="w-4 h-4" />
-                                Start
-                              </Button>
-                            )}
-                          </TableCell>
-                        </motion.tr>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/[0.06] flex items-center justify-center">
+                      <Printer className="w-8 h-8 text-white/40" />
+                    </div>
+                    <p className="text-white/60 mb-4">No job currently printing</p>
+                    {nextJob && (
+                      <GlassButton
+                        variant="primary"
+                        onClick={() => handleStartPrint(nextJob)}
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Start Next Job
+                      </GlassButton>
+                    )}
+                  </div>
                 )}
-              </Card>
-            </AnimatedCard>
+              </GlassCardContent>
+            </GlassCard>
 
-            {/* Recent Completed */}
-            <AnimatedCard delay={0.4}>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <History className="w-5 h-5" />
-                    Recently Completed
-                  </CardTitle>
-                </CardHeader>
-                {recentCompleted.length === 0 ? (
-                  <CardContent className="py-8 text-center">
-                    <p className="text-muted-foreground">No completed jobs yet</p>
-                  </CardContent>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Project</TableHead>
-                        <TableHead>User</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Completed</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {recentCompleted.map((job, index) => (
-                        <motion.tr
-                          key={job.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="border-b border-muted/20 last:border-0"
-                        >
-                          <TableCell className="font-medium">{job.project_name}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {job.expand?.user?.name}
-                          </TableCell>
-                          <TableCell>
-                            {formatDuration(job.actual_duration_min || job.estimated_duration_min || 0)}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {formatRelativeTime(job.updated)}
-                          </TableCell>
-                        </motion.tr>
-                      ))}
-                    </TableBody>
-                  </Table>
+            {/* Queue Stats Card */}
+            <GlassCard delay={0.2}>
+              <GlassCardHeader>
+                <GlassCardTitle icon={<ListOrdered className="w-5 h-5 text-purple-400" />}>
+                  Queue Stats
+                </GlassCardTitle>
+              </GlassCardHeader>
+              <GlassCardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-4 rounded-xl bg-white/[0.06] border border-white/[0.08]">
+                    <span className="text-3xl font-bold text-purple-400">{queuedJobs.length}</span>
+                    <p className="text-xs text-white/50 mt-1">In Queue</p>
+                  </div>
+                  <div className="text-center p-4 rounded-xl bg-white/[0.06] border border-white/[0.08]">
+                    <span className="text-3xl font-bold text-cyan-400">
+                      {totalQueueTime > 0 ? formatDuration(totalQueueTime) : '-'}
+                    </span>
+                    <p className="text-xs text-white/50 mt-1">Total Time</p>
+                  </div>
+                </div>
+
+                {nextJob && !currentJob && (
+                  <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-400/20">
+                    <p className="text-sm font-medium text-white mb-1">Up Next</p>
+                    <p className="text-sm text-white/60">{nextJob.project_name}</p>
+                    <p className="text-xs text-white/40 mt-1 pb-6">
+                      by {nextJob.expand?.user?.name}
+                    </p>
+                    <GlassButton
+                      variant="primary"
+                      size="sm"
+                      className="w-full mt-3"
+                      onClick={() => handleStartPrint(nextJob)}
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Start Print
+                    </GlassButton>
+                  </div>
                 )}
-              </Card>
-            </AnimatedCard>
-          </>
-        )}
+              </GlassCardContent>
+            </GlassCard>
+          </div>
 
-        {/* Start Print Modal */}
-        <Modal
-          isOpen={showStartModal}
-          onClose={() => setShowStartModal(false)}
-          title="Start Print Job"
-          hideCloseButton={isStarting}
-        >
-          <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-muted/50">
-              <p className="font-medium text-foreground">{selectedJob?.project_name}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                by {selectedJob?.expand?.user?.name}
-              </p>
-              <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                <span>Est. {formatDuration(selectedJob?.estimated_duration_min || 0)}</span>
-                <span>₱{selectedJob?.price_pesos?.toFixed(2)}</span>
+          <GlassSeparator />
+
+          {/* Queue Table */}
+          <GlassCard delay={0.3}>
+            <GlassCardHeader>
+              <div className="flex items-center gap-2">
+                <GlassCardTitle icon={<ListOrdered className="w-5 h-5 text-cyan-400" />}>
+                  Print Queue
+                </GlassCardTitle>
+                {queuedJobs.length > 0 && (
+                  <GlassBadge variant="primary">{queuedJobs.length}</GlassBadge>
+                )}
               </div>
-            </div>
+            </GlassCardHeader>
+            {queuedJobs.length === 0 ? (
+              <GlassCardContent className="py-8 text-center">
+                <p className="text-white/60">Queue is empty</p>
+              </GlassCardContent>
+            ) : (
+              <GlassTable>
+                <GlassTableHeader>
+                  <GlassTableRow>
+                    <GlassTableHead className="w-16">#</GlassTableHead>
+                    <GlassTableHead>Project</GlassTableHead>
+                    <GlassTableHead>User</GlassTableHead>
+                    <GlassTableHead>Duration</GlassTableHead>
+                    <GlassTableHead>Price</GlassTableHead>
+                    <GlassTableHead className="text-right">Actions</GlassTableHead>
+                  </GlassTableRow>
+                </GlassTableHeader>
+                <GlassTableBody>
+                  {queuedJobs.map((job, index) => (
+                    <GlassTableRow key={job.id} delay={index * 0.05}>
+                      <GlassTableCell className="font-bold text-white/40">
+                        {index + 1}
+                      </GlassTableCell>
+                      <GlassTableCell className="font-medium text-white">
+                        {job.project_name}
+                      </GlassTableCell>
+                      <GlassTableCell className="text-white/60">
+                        {job.expand?.user?.name}
+                      </GlassTableCell>
+                      <GlassTableCell className="text-white/60">
+                        {formatDuration(job.estimated_duration_min || 0)}
+                      </GlassTableCell>
+                      <GlassTableCell className="text-cyan-400">
+                        ₱{job.price_pesos?.toFixed(2)}
+                      </GlassTableCell>
+                      <GlassTableCell className="text-right">
+                        {index === 0 && !currentJob && (
+                          <GlassButton
+                            size="sm"
+                            variant="primary"
+                            onClick={() => handleStartPrint(job)}
+                          >
+                            <Play className="w-4 h-4 mr-1" />
+                            Start
+                          </GlassButton>
+                        )}
+                      </GlassTableCell>
+                    </GlassTableRow>
+                  ))}
+                </GlassTableBody>
+              </GlassTable>
+            )}
+          </GlassCard>
 
-            <p className="text-sm text-muted-foreground">
-              Confirm that the printer is ready and the file has been loaded.
+          {/* Recent Completed */}
+          <GlassCard delay={0.4}>
+            <GlassCardHeader>
+              <GlassCardTitle icon={<History className="w-5 h-5 text-emerald-400" />}>
+                Recently Completed
+              </GlassCardTitle>
+            </GlassCardHeader>
+            {recentCompleted.length === 0 ? (
+              <GlassCardContent className="py-8 text-center">
+                <p className="text-white/60">No completed jobs yet</p>
+              </GlassCardContent>
+            ) : (
+              <GlassTable>
+                <GlassTableHeader>
+                  <GlassTableRow>
+                    <GlassTableHead>Project</GlassTableHead>
+                    <GlassTableHead>User</GlassTableHead>
+                    <GlassTableHead>Duration</GlassTableHead>
+                    <GlassTableHead>Completed</GlassTableHead>
+                  </GlassTableRow>
+                </GlassTableHeader>
+                <GlassTableBody>
+                  {recentCompleted.map((job, index) => (
+                    <GlassTableRow key={job.id} delay={index * 0.05}>
+                      <GlassTableCell className="font-medium text-white">
+                        {job.project_name}
+                      </GlassTableCell>
+                      <GlassTableCell className="text-white/60">
+                        {job.expand?.user?.name}
+                      </GlassTableCell>
+                      <GlassTableCell className="text-white/60">
+                        {formatDuration(job.actual_duration_min || job.estimated_duration_min || 0)}
+                      </GlassTableCell>
+                      <GlassTableCell className="text-white/40">
+                        {formatRelativeTime(job.updated)}
+                      </GlassTableCell>
+                    </GlassTableRow>
+                  ))}
+                </GlassTableBody>
+              </GlassTable>
+            )}
+          </GlassCard>
+        </>
+      )}
+
+      {/* Start Print Modal */}
+      <GlassModal
+        isOpen={showStartModal}
+        onClose={() => setShowStartModal(false)}
+        title="Start Print Job"
+        hideCloseButton={isStarting}
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-white/[0.06] border border-white/[0.08]">
+            <p className="font-medium text-white">{selectedJob?.project_name}</p>
+            <p className="text-sm text-white/60 mt-1">
+              by {selectedJob?.expand?.user?.name}
             </p>
-
-            <div className="flex gap-3">
-              <Button
-                variant="ghost"
-                className="flex-1"
-                onClick={() => setShowStartModal(false)}
-                disabled={isStarting}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                className="flex-1"
-                onClick={confirmStart}
-                disabled={isStarting}
-              >
-                {isStarting ? 'Starting...' : 'Start Print'}
-              </Button>
+            <div className="flex gap-4 mt-2 text-sm text-white/60">
+              <span>Est. {formatDuration(selectedJob?.estimated_duration_min || 0)}</span>
+              <span className="text-cyan-400">₱{selectedJob?.price_pesos?.toFixed(2)}</span>
             </div>
           </div>
-        </Modal>
 
-        {/* Complete Modal */}
-        <Modal
-          isOpen={showCompleteModal}
-          onClose={() => setShowCompleteModal(false)}
-          title="Job Finished"
-          description="Confirm the actual print duration"
-          hideCloseButton={isCompleting}
+          <p className="text-sm text-white/60">
+            Confirm that the printer is ready and the file has been loaded.
+          </p>
+
+          <GlassModalFooter>
+            <GlassButton
+              variant="ghost"
+              className="flex-1"
+              onClick={() => setShowStartModal(false)}
+              disabled={isStarting}
+            >
+              Cancel
+            </GlassButton>
+            <GlassButton
+              variant="primary"
+              className="flex-1"
+              onClick={confirmStart}
+              disabled={isStarting}
+            >
+              {isStarting ? 'Starting...' : 'Start Print'}
+            </GlassButton>
+          </GlassModalFooter>
+        </div>
+      </GlassModal>
+
+      {/* Complete Modal */}
+      <GlassModal
+        isOpen={showCompleteModal}
+        onClose={() => setShowCompleteModal(false)}
+        title="Job Finished"
+        description="Confirm the actual print duration"
+        hideCloseButton={isCompleting}
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            confirmComplete();
+          }}
+          className="space-y-4"
         >
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              confirmComplete();
-            }}
-            className="space-y-4"
-          >
-            <div className="p-3 rounded-xl bg-success/10 text-success text-sm">
-              The estimated time was {formatDuration(currentJob?.estimated_duration_min || 0)}.
-              Adjust if needed.
-            </div>
-
-            <FormField label="Actual Duration" required>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="Hours"
-                    value={completeHours}
-                    onChange={(e) => setCompleteHours(e.target.value)}
-                  />
-                </div>
-                <div className="flex-1">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="59"
-                    placeholder="Minutes"
-                    value={completeMins}
-                    onChange={(e) => setCompleteMins(e.target.value)}
-                  />
-                </div>
-              </div>
-            </FormField>
-
-            <p className="text-xs text-muted-foreground">
-              This updates the user's Karma score for queue fairness.
-            </p>
-
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="ghost"
-                className="flex-1"
-                onClick={() => setShowCompleteModal(false)}
-                disabled={isCompleting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="success"
-                className="flex-1"
-                disabled={isCompleting}
-              >
-                {isCompleting ? 'Completing...' : 'Confirm Complete'}
-              </Button>
-            </div>
-          </form>
-        </Modal>
-
-        {/* Fail Modal */}
-        <Modal
-          isOpen={showFailModal}
-          onClose={() => setShowFailModal(false)}
-          title="Mark as Failed"
-          hideCloseButton={isFailing}
-        >
-          <div className="space-y-4">
-            <div className="p-3 rounded-xl bg-warning/10 text-warning text-sm">
-              Failed prints don't penalize the user's Karma. They get a free retry.
-            </div>
-
-            <FormField label="Failure Notes">
-              <Textarea
-                placeholder="What went wrong? (e.g., bed adhesion failure)"
-                value={failNotes}
-                onChange={(e) => setFailNotes(e.target.value)}
-              />
-            </FormField>
-
-            <div className="flex gap-3">
-              <Button
-                variant="ghost"
-                className="flex-1"
-                onClick={() => setShowFailModal(false)}
-                disabled={isFailing}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={confirmFail}
-                disabled={isFailing}
-              >
-                {isFailing ? 'Processing...' : 'Mark Failed'}
-              </Button>
-            </div>
+          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-400/20 text-emerald-300 text-sm">
+            The estimated time was {formatDuration(currentJob?.estimated_duration_min || 0)}.
+            Adjust if needed.
           </div>
-        </Modal>
-      </div>
-    </PageTransition>
+
+          <GlassFormField label="Actual Duration" required>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <GlassInput
+                  type="number"
+                  min="0"
+                  placeholder="Hours"
+                  value={completeHours}
+                  onChange={(e) => setCompleteHours(e.target.value)}
+                />
+              </div>
+              <div className="flex-1">
+                <GlassInput
+                  type="number"
+                  min="0"
+                  max="59"
+                  placeholder="Minutes"
+                  value={completeMins}
+                  onChange={(e) => setCompleteMins(e.target.value)}
+                />
+              </div>
+            </div>
+          </GlassFormField>
+
+          <p className="text-xs text-white/40">
+            This updates the user's Karma score for queue fairness.
+          </p>
+
+          <GlassModalFooter>
+            <GlassButton
+              type="button"
+              variant="ghost"
+              className="flex-1"
+              onClick={() => setShowCompleteModal(false)}
+              disabled={isCompleting}
+            >
+              Cancel
+            </GlassButton>
+            <GlassButton
+              type="submit"
+              variant="success"
+              className="flex-1"
+              disabled={isCompleting}
+            >
+              {isCompleting ? 'Completing...' : 'Confirm Complete'}
+            </GlassButton>
+          </GlassModalFooter>
+        </form>
+      </GlassModal>
+
+      {/* Fail Modal */}
+      <GlassModal
+        isOpen={showFailModal}
+        onClose={() => setShowFailModal(false)}
+        title="Mark as Failed"
+        hideCloseButton={isFailing}
+      >
+        <div className="space-y-4">
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-400/20 text-amber-300 text-sm">
+            Failed prints don't penalize the user's Karma. They get a free retry.
+          </div>
+
+          <GlassFormField label="Failure Notes">
+            <GlassTextarea
+              placeholder="What went wrong? (e.g., bed adhesion failure)"
+              value={failNotes}
+              onChange={(e) => setFailNotes(e.target.value)}
+            />
+          </GlassFormField>
+
+          <GlassModalFooter>
+            <GlassButton
+              variant="ghost"
+              className="flex-1"
+              onClick={() => setShowFailModal(false)}
+              disabled={isFailing}
+            >
+              Cancel
+            </GlassButton>
+            <GlassButton
+              variant="danger"
+              className="flex-1"
+              onClick={confirmFail}
+              disabled={isFailing}
+            >
+              {isFailing ? 'Processing...' : 'Mark Failed'}
+            </GlassButton>
+          </GlassModalFooter>
+        </div>
+      </GlassModal>
+    </div>
   );
 };
+

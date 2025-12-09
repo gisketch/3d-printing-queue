@@ -1,20 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-  Button,
-  Input,
-  FormField,
-} from 'gisketch-neumorphism';
-import { Modal } from '../components/Modal';
+import { Printer, User, Lock, CheckCircle } from 'lucide-react';
+import { GlassCard } from '../components/ui/GlassCard';
+import { GlassButton } from '../components/ui/GlassButton';
+import { GlassInput } from '../components/ui/GlassInput';
+import { GlassModal } from '../components/ui/GlassModal';
+import { AnimatedBackground } from '../components/ui/AnimatedBackground';
 import { useAuth } from '../context/AuthContext';
 import { useRequestAccess } from '../hooks/useUsers';
-import { Printer } from 'lucide-react';
+import { cn, glass } from '../glass';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -75,81 +69,94 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated Background */}
+      <AnimatedBackground />
+
+      <div className="w-full max-w-md relative z-10">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4
-            shadow-[-4px_-4px_8px_rgba(var(--shadow-light)),4px_4px_8px_rgba(var(--shadow-dark)),inset_2px_2px_4px_hsl(var(--primary-light)),inset_-2px_-2px_4px_hsl(var(--primary-dark)/0.5)]">
-            <Printer className="w-8 h-8 text-white" />
+          <div
+            className={cn(
+              'inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4',
+              glass.blur.xl,
+              'bg-gradient-to-br from-cyan-500/20 to-purple-500/20',
+              'border border-white/10',
+              glass.shadow.glowStrong
+            )}
+          >
+            <Printer className="w-10 h-10 text-cyan-300" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Netzon 3D Print Queue</h1>
-          <p className="text-muted-foreground mt-1">Manage your 3D printing requests</p>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Netzon 3D Print Queue
+          </h1>
+          <p className="text-white/60">
+            Manage your 3D printing requests
+          </p>
         </div>
 
         {/* Login Card */}
-        <Card>
-          <form onSubmit={handleLogin}>
-            <CardHeader>
-              <CardTitle>Sign In</CardTitle>
-              <CardDescription>
+        <GlassCard variant="strong" className="p-6">
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-semibold text-white mb-1">Sign In</h2>
+              <p className="text-white/50 text-sm">
                 Enter your credentials to access the print queue
-              </CardDescription>
-            </CardHeader>
+              </p>
+            </div>
 
-            <CardContent className="space-y-4">
-              {error && (
-                <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-sm">
-                  {error}
-                </div>
-              )}
+            {error && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-400/20 text-red-300 text-sm">
+                {error}
+              </div>
+            )}
 
-              <FormField label="Username">
-                <Input
-                  type="text"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
-              </FormField>
+            <GlassInput
+              label="Username"
+              type="text"
+              placeholder="Enter your username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              icon={<User size={18} />}
+              required
+            />
 
-              <FormField label="Password">
-                <Input
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </FormField>
-            </CardContent>
+            <GlassInput
+              label="Password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              icon={<Lock size={18} />}
+              required
+            />
 
-            <CardFooter className="flex flex-col gap-3">
-              <Button
+            <div className="space-y-3 pt-2">
+              <GlassButton
                 type="submit"
                 variant="primary"
                 className="w-full"
                 disabled={isLoading}
+                loading={isLoading}
               >
                 {isLoading ? 'Signing in...' : 'Sign In'}
-              </Button>
+              </GlassButton>
 
-              <Button
+              <GlassButton
                 type="button"
                 variant="ghost"
                 className="w-full"
                 onClick={() => setShowRequestModal(true)}
               >
                 Request Access
-              </Button>
-            </CardFooter>
+              </GlassButton>
+            </div>
           </form>
-        </Card>
+        </GlassCard>
       </div>
 
       {/* Request Access Modal */}
-      <Modal
+      <GlassModal
         isOpen={showRequestModal}
         onClose={closeRequestModal}
         title={requestSuccess ? 'Request Submitted!' : 'Request Access'}
@@ -160,71 +167,73 @@ export const LoginPage: React.FC = () => {
         }
       >
         {requestSuccess ? (
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success/10 flex items-center justify-center">
-              <svg className="w-8 h-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+          <div className="text-center py-4">
+            <div className={cn(
+              'w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center',
+              'bg-emerald-500/20 border border-emerald-400/30'
+            )}>
+              <CheckCircle className="w-8 h-8 text-emerald-400" />
             </div>
-            <p className="text-foreground mb-2">Your request has been submitted!</p>
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="text-white mb-2">Your request has been submitted!</p>
+            <p className="text-sm text-white/50 mb-6">
               An admin will review your request and send you login credentials. Message Glenn, Stephen, or Julius.
             </p>
-            <Button onClick={closeRequestModal} className="w-full">
+            <GlassButton onClick={closeRequestModal} variant="primary" className="w-full">
               Got it
-            </Button>
+            </GlassButton>
           </div>
         ) : (
           <form onSubmit={handleRequestAccess} className="space-y-4">
             {requestError && (
-              <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-sm">
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-400/20 text-red-300 text-sm">
                 {requestError}
               </div>
             )}
 
-            <FormField label="Full Name" required>
-              <Input
-                type="text"
-                placeholder="John Doe"
-                value={requestFullName}
-                onChange={(e) => setRequestFullName(e.target.value)}
-              />
-            </FormField>
-
-            <FormField
-              label="Desired Username"
-              description="This will be your login username"
+            <GlassInput
+              label="Full Name"
+              type="text"
+              placeholder="John Doe"
+              value={requestFullName}
+              onChange={(e) => setRequestFullName(e.target.value)}
+              icon={<User size={18} />}
               required
-            >
-              <Input
+            />
+
+            <div>
+              <GlassInput
+                label="Desired Username"
                 type="text"
                 placeholder="johndoe"
                 value={requestUsername}
                 onChange={(e) => setRequestUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
+                required
               />
-            </FormField>
+              <p className="text-xs text-white/40 mt-4">This will be your login username</p>
+            </div>
 
             <div className="flex gap-3 pt-2">
-              <Button
+              <GlassButton
                 type="button"
                 variant="ghost"
                 className="flex-1"
                 onClick={closeRequestModal}
               >
                 Cancel
-              </Button>
-              <Button
+              </GlassButton>
+              <GlassButton
                 type="submit"
                 variant="primary"
                 className="flex-1"
                 disabled={isSubmitting}
+                loading={isSubmitting}
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Request'}
-              </Button>
+              </GlassButton>
             </div>
           </form>
         )}
-      </Modal>
+      </GlassModal>
     </div>
   );
 };
