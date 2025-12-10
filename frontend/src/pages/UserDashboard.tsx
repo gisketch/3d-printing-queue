@@ -29,7 +29,7 @@ import {
 import { Receipt } from '../components/Receipt';
 import { useAuth } from '../context/AuthContext';
 import { useHasActiveJob, useJobs } from '../hooks/useJobs';
-import { createJob } from '../services/jobService';
+import { createJob, getSetting } from '../services/jobService';
 import { formatDuration, formatRelativeTime, getPrintingProgress } from '../lib/utils';
 import { JOB_STATUS_CONFIG, type Job } from '../types';
 import {
@@ -50,10 +50,20 @@ import {
 
 export const UserDashboard: React.FC = () => {
   const [nowMs, setNowMs] = useState(Date.now());
+  const [electricityRate, setElectricityRate] = useState(7.5);
 
   useEffect(() => {
     const id = setInterval(() => setNowMs(Date.now()), 5000);
     return () => clearInterval(id);
+  }, []);
+
+  // Load electricity rate setting
+  useEffect(() => {
+    const loadRate = async () => {
+      const rate = await getSetting('electricity_rate_per_hour');
+      if (rate !== null) setElectricityRate(rate);
+    };
+    loadRate();
   }, []);
 
   const { user } = useAuth();
@@ -139,9 +149,19 @@ export const UserDashboard: React.FC = () => {
   const activeJobs = jobs.filter(j => ['pending_review', 'queued', 'printing'].includes(j.status));
   const completedJobs = jobs.filter(j => ['completed', 'rejected', 'failed'].includes(j.status));
 
+  // Helper to calculate total cost for a job
+  const calculateJobTotal = (job: Job) => {
+    const rawCost = job.price_pesos || 0;
+    const durationMin = job.status === 'completed' && job.actual_duration_min 
+      ? job.actual_duration_min 
+      : (job.estimated_duration_min || 0);
+    const electricityCost = (durationMin / 60) * electricityRate;
+    return Math.round((rawCost + electricityCost) * 100) / 100;
+  };
+
   // Calculate user stats
   const totalPrints = jobs.filter(j => j.status === 'completed').length;
-  const totalSpent = jobs.reduce((acc, j) => acc + (j.price_pesos || 0), 0);
+  const totalSpent = jobs.reduce((acc, j) => acc + calculateJobTotal(j), 0);
 
   return (
     <div className="space-y-8">
@@ -439,7 +459,7 @@ export const UserDashboard: React.FC = () => {
                             {job.estimated_duration_min ? formatDuration(job.estimated_duration_min) : '-'}
                           </GlassTableCell>
                           <GlassTableCell>
-                            {job.price_pesos ? `₱${job.price_pesos.toFixed(2)}` : '-'}
+                            {job.price_pesos ? `₱${calculateJobTotal(job).toFixed(2)}` : '-'}
                           </GlassTableCell>
                           <GlassTableCell className="text-white/50">
                             {formatRelativeTime(job.created)}
@@ -509,7 +529,7 @@ export const UserDashboard: React.FC = () => {
                            job.estimated_duration_min ? formatDuration(job.estimated_duration_min) : '-'}
                         </GlassTableCell>
                         <GlassTableCell>
-                          {job.price_pesos ? `₱${job.price_pesos.toFixed(2)}` : '-'}
+                          {job.price_pesos ? `₱${calculateJobTotal(job).toFixed(2)}` : '-'}
                         </GlassTableCell>
                         <GlassTableCell className="text-white/50">
                           {formatRelativeTime(job.updated)}
@@ -655,6 +675,7 @@ export const UserDashboard: React.FC = () => {
             setShowReceiptModal(false);
             setSelectedReceiptJob(null);
           }}
+          electricityRate={electricityRate}
         />
       )}
 

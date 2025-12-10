@@ -23,7 +23,7 @@ import {
 
 } from '../../components/ui';
 import { useJobs } from '../../hooks/useJobs';
-import { startPrinting, completeJob, failJob } from '../../services/jobService';
+import { startPrinting, completeJob, failJob, getSetting } from '../../services/jobService';
 import { formatDuration, formatRelativeTime, getPrintingProgress } from '../../lib/utils';
 import type { Job } from '../../types';
 import {
@@ -41,11 +41,31 @@ import {
 
 export const AdminPrintManager: React.FC = () => {
   const [nowMs, setNowMs] = useState(Date.now());
+  const [electricityRate, setElectricityRate] = useState(7.5);
 
   useEffect(() => {
     const id = setInterval(() => setNowMs(Date.now()), 5000);
     return () => clearInterval(id);
   }, []);
+
+  // Load electricity rate setting
+  useEffect(() => {
+    const loadRate = async () => {
+      const rate = await getSetting('electricity_rate_per_hour');
+      if (rate !== null) setElectricityRate(rate);
+    };
+    loadRate();
+  }, []);
+
+  // Helper to calculate total cost for a job
+  const calculateJobTotal = (job: Job) => {
+    const rawCost = job.price_pesos || 0;
+    const durationMin = job.status === 'completed' && job.actual_duration_min 
+      ? job.actual_duration_min 
+      : (job.estimated_duration_min || 0);
+    const electricityCost = (durationMin / 60) * electricityRate;
+    return Math.round((rawCost + electricityCost) * 100) / 100;
+  };
 
   // Get printing and queued jobs
   const { jobs: printingJobs, isLoading: loadingPrinting } = useJobs({ status: 'printing' });
@@ -209,7 +229,7 @@ export const AdminPrintManager: React.FC = () => {
                             <Clock className="w-4 h-4" />
                             Est. {formatDuration(currentJob.estimated_duration_min || 0)}
                           </span>
-                          <span className="text-cyan-400">₱{currentJob.price_pesos?.toFixed(2)}</span>
+                          <span className="text-cyan-400">₱{calculateJobTotal(currentJob).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -355,7 +375,7 @@ export const AdminPrintManager: React.FC = () => {
                         {formatDuration(job.estimated_duration_min || 0)}
                       </GlassTableCell>
                       <GlassTableCell className="text-cyan-400">
-                        ₱{job.price_pesos?.toFixed(2)}
+                        ₱{calculateJobTotal(job).toFixed(2)}
                       </GlassTableCell>
                       <GlassTableCell className="text-right">
                         {index === 0 && !currentJob && (
@@ -436,7 +456,7 @@ export const AdminPrintManager: React.FC = () => {
             </p>
             <div className="flex gap-4 mt-2 text-sm text-white/60">
               <span>Est. {formatDuration(selectedJob?.estimated_duration_min || 0)}</span>
-              <span className="text-cyan-400">₱{selectedJob?.price_pesos?.toFixed(2)}</span>
+              <span className="text-cyan-400">₱{selectedJob ? calculateJobTotal(selectedJob).toFixed(2) : '0.00'}</span>
             </div>
           </div>
 

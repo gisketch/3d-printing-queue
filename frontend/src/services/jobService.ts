@@ -87,21 +87,13 @@ export async function createJob(userId: string, data: JobSubmissionFormData): Pr
 export async function approveJob(jobId: string, data: JobApprovalFormData): Promise<Job> {
   const estimatedMinutes = (data.estimated_duration_hours * 60) + data.estimated_duration_mins;
 
-  // Calculate costs
-  const { electricityCost, markupCost, totalCost } = await calculateCosts(
-    data.filament_cost,
-    estimatedMinutes
-  );
-
   // Generate receipt number
   const receiptNumber = generateReceiptNumber();
 
+  // Only store raw cost (price_pesos) - electricity is calculated in frontend
   return await pb.collection('jobs').update<Job>(jobId, {
     status: 'queued',
-    filament_cost: data.filament_cost,
-    electricity_cost: electricityCost,
-    markup_cost: markupCost,
-    price_pesos: totalCost,
+    price_pesos: data.filament_cost, // This is now the raw cost
     receipt_number: receiptNumber,
     estimated_duration_min: estimatedMinutes,
     admin_notes: data.admin_notes,

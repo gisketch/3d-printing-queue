@@ -38,9 +38,24 @@ import {
   Settings,
   Receipt as ReceiptIcon,
   Printer,
+  Download,
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 15;
+
+// Helper to get week start (Sunday) and end (Saturday)
+const getWeekRange = (date: Date) => {
+  const start = new Date(date);
+  const day = start.getDay();
+  start.setDate(start.getDate() - day);
+  start.setHours(0, 0, 0, 0);
+  
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  
+  return { start, end };
+};
 
 export const AdminReports: React.FC = () => {
   // Fetch all jobs
@@ -56,7 +71,6 @@ export const AdminReports: React.FC = () => {
   
   // Settings state
   const [electricityRate, setElectricityRate] = useState('7.5');
-  const [markupPercentage, setMarkupPercentage] = useState('20');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Load settings
@@ -66,9 +80,6 @@ export const AdminReports: React.FC = () => {
       if (settings['electricity_rate_per_hour']) {
         setElectricityRate(settings['electricity_rate_per_hour'].toString());
       }
-      if (settings['markup_percentage']) {
-        setMarkupPercentage(settings['markup_percentage'].toString());
-      }
     };
     loadSettings();
   }, []);
@@ -77,15 +88,24 @@ export const AdminReports: React.FC = () => {
   const filteredJobs = useMemo(() => {
     if (!allJobs.length) return [];
     
-    const start = new Date(selectedDate);
-    const end = new Date(selectedDate);
+    let start: Date;
+    let end: Date;
     
     if (activeTab === 'daily') {
+      start = new Date(selectedDate);
       start.setHours(0, 0, 0, 0);
+      end = new Date(selectedDate);
       end.setHours(23, 59, 59, 999);
+    } else if (activeTab === 'weekly') {
+      const weekRange = getWeekRange(selectedDate);
+      start = weekRange.start;
+      end = weekRange.end;
     } else {
+      // monthly
+      start = new Date(selectedDate);
       start.setDate(1);
       start.setHours(0, 0, 0, 0);
+      end = new Date(selectedDate);
       end.setMonth(end.getMonth() + 1);
       end.setDate(0);
       end.setHours(23, 59, 59, 999);
@@ -97,15 +117,26 @@ export const AdminReports: React.FC = () => {
     });
   }, [allJobs, selectedDate, activeTab]);
 
-  // Calculate revenue stats
+  // Calculate revenue stats (with frontend electricity calculation)
   const revenueStats = useMemo(() => {
+    const rate = parseFloat(electricityRate) || 7.5;
+    
+    const calculateTotal = (job: Job) => {
+      const rawCost = job.price_pesos || 0;
+      const durationMin = job.status === 'completed' && job.actual_duration_min 
+        ? job.actual_duration_min 
+        : (job.estimated_duration_min || 0);
+      const electricityCost = (durationMin / 60) * rate;
+      return rawCost + electricityCost;
+    };
+    
     const completed = filteredJobs.filter(j => j.status === 'completed');
     const printing = filteredJobs.filter(j => j.status === 'printing');
     const queued = filteredJobs.filter(j => j.status === 'queued');
     
-    const completedRevenue = completed.reduce((acc, j) => acc + (j.price_pesos || 0), 0);
-    const printingRevenue = printing.reduce((acc, j) => acc + (j.price_pesos || 0), 0);
-    const queuedRevenue = queued.reduce((acc, j) => acc + (j.price_pesos || 0), 0);
+    const completedRevenue = completed.reduce((acc, j) => acc + calculateTotal(j), 0);
+    const printingRevenue = printing.reduce((acc, j) => acc + calculateTotal(j), 0);
+    const queuedRevenue = queued.reduce((acc, j) => acc + calculateTotal(j), 0);
     
     return {
       completed: completedRevenue,
@@ -114,7 +145,7 @@ export const AdminReports: React.FC = () => {
       total: completedRevenue + printingRevenue,
       forecast: queuedRevenue,
     };
-  }, [filteredJobs]);
+  }, [filteredJobs, electricityRate]);
 
   // Pagination
   const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
@@ -133,6 +164,8 @@ export const AdminReports: React.FC = () => {
     const newDate = new Date(selectedDate);
     if (activeTab === 'daily') {
       newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+    } else if (activeTab === 'weekly') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
     } else {
       newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
     }
@@ -148,10 +181,187 @@ export const AdminReports: React.FC = () => {
         day: 'numeric',
       });
     }
+    if (activeTab === 'weekly') {
+      const { start, end } = getWeekRange(selectedDate);
+      const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return `${startStr} - ${endStr}`;
+    }
     return selectedDate.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
     });
+  };
+
+  // Print report handler
+  const handlePrintReport = () => {
+    const rate = parseFloat(electricityRate) || 7.5;
+    const reportTitle = activeTab === 'daily' ? 'Daily Report' : activeTab === 'weekly' ? 'Weekly Report' : 'Monthly Report';
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const jobRows = filteredJobs.map(job => {
+      const total = calculateJobTotal(job);
+      return `
+        <tr>
+          <td>${job.receipt_number || job.id.slice(0, 10)}</td>
+          <td>${job.project_name}</td>
+          <td>${job.expand?.user?.name || 'Unknown'}</td>
+          <td>${JOB_STATUS_CONFIG[job.status]?.label || job.status}</td>
+          <td style="text-align: right;">₱${total.toFixed(2)}</td>
+          <td>${new Date(job.created).toLocaleDateString()}</td>
+        </tr>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${reportTitle} - ${formatDateLabel()}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+              font-family: 'Segoe UI', system-ui, sans-serif;
+              padding: 40px;
+              max-width: 900px;
+              margin: 0 auto;
+              background: white;
+              color: #1a1a1a;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 32px;
+              padding-bottom: 16px;
+              border-bottom: 2px solid #e5e5e5;
+            }
+            .header h1 {
+              font-size: 24px;
+              margin-bottom: 8px;
+            }
+            .header .date {
+              font-size: 16px;
+              color: #666;
+            }
+            .stats {
+              display: flex;
+              gap: 24px;
+              margin-bottom: 32px;
+              justify-content: center;
+            }
+            .stat-box {
+              padding: 16px 24px;
+              background: #f5f5f5;
+              border-radius: 8px;
+              text-align: center;
+            }
+            .stat-box .label {
+              font-size: 12px;
+              color: #666;
+              text-transform: uppercase;
+              margin-bottom: 4px;
+            }
+            .stat-box .value {
+              font-size: 20px;
+              font-weight: bold;
+              color: #0891b2;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 24px;
+            }
+            th, td {
+              padding: 12px 8px;
+              text-align: left;
+              border-bottom: 1px solid #e5e5e5;
+            }
+            th {
+              background: #f5f5f5;
+              font-weight: 600;
+              font-size: 12px;
+              text-transform: uppercase;
+              color: #666;
+            }
+            td {
+              font-size: 14px;
+            }
+            .total-row {
+              font-weight: bold;
+              background: #f0fdf4;
+            }
+            .total-row td {
+              border-top: 2px solid #1a1a1a;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 32px;
+              font-size: 12px;
+              color: #666;
+            }
+            @media print {
+              body { padding: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>🖨️ Netzon 3D Print - ${reportTitle}</h1>
+            <div class="date">${formatDateLabel()}</div>
+          </div>
+          
+          <div class="stats">
+            <div class="stat-box">
+              <div class="label">Total Revenue</div>
+              <div class="value">₱${revenueStats.total.toFixed(2)}</div>
+            </div>
+            <div class="stat-box">
+              <div class="label">Completed</div>
+              <div class="value">₱${revenueStats.completed.toFixed(2)}</div>
+            </div>
+            <div class="stat-box">
+              <div class="label">In Progress</div>
+              <div class="value">₱${revenueStats.printing.toFixed(2)}</div>
+            </div>
+            <div class="stat-box">
+              <div class="label">Queued (Forecast)</div>
+              <div class="value">₱${revenueStats.forecast.toFixed(2)}</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Receipt #</th>
+                <th>Project</th>
+                <th>User</th>
+                <th>Status</th>
+                <th style="text-align: right;">Cost</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${jobRows || '<tr><td colspan="6" style="text-align: center; color: #666;">No jobs found</td></tr>'}
+              ${filteredJobs.length > 0 ? `
+              <tr class="total-row">
+                <td colspan="4">TOTAL (${filteredJobs.length} jobs)</td>
+                <td style="text-align: right;">₱${filteredJobs.reduce((acc, j) => acc + calculateJobTotal(j), 0).toFixed(2)}</td>
+                <td></td>
+              </tr>
+              ` : ''}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <p>Generated on ${new Date().toLocaleString()}</p>
+            <p>Electricity Rate: ₱${rate.toFixed(2)}/hour</p>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   const handleViewReceipt = (job: Job) => {
@@ -163,13 +373,23 @@ export const AdminReports: React.FC = () => {
     setIsSavingSettings(true);
     try {
       await updateSetting('electricity_rate_per_hour', parseFloat(electricityRate) || 7.5);
-      await updateSetting('markup_percentage', parseFloat(markupPercentage) || 20);
       setShowSettingsModal(false);
     } catch (error) {
       console.error('Failed to save settings:', error);
     } finally {
       setIsSavingSettings(false);
     }
+  };
+
+  // Helper to calculate total cost for a job
+  const calculateJobTotal = (job: Job) => {
+    const rate = parseFloat(electricityRate) || 7.5;
+    const rawCost = job.price_pesos || 0;
+    const durationMin = job.status === 'completed' && job.actual_duration_min 
+      ? job.actual_duration_min 
+      : (job.estimated_duration_min || 0);
+    const electricityCost = (durationMin / 60) * rate;
+    return Math.round((rawCost + electricityCost) * 100) / 100;
   };
 
   if (loadingJobs) {
@@ -246,7 +466,7 @@ export const AdminReports: React.FC = () => {
                   </GlassTableCell>
                   <GlassTableCell>
                     <span className="text-emerald-400 font-medium">
-                      ₱{(job.price_pesos || 0).toFixed(2)}
+                      ₱{calculateJobTotal(job).toFixed(2)}
                     </span>
                   </GlassTableCell>
                   <GlassTableCell className="text-white/60">
@@ -323,20 +543,30 @@ export const AdminReports: React.FC = () => {
             Revenue tracking and job history
           </p>
         </div>
-        <GlassButton
-          variant="ghost"
-          onClick={() => setShowSettingsModal(true)}
-        >
-          <Settings className="w-4 h-4 mr-2" />
-          Pricing Settings
-        </GlassButton>
+        <div className="flex gap-2">
+          <GlassButton
+            variant="primary"
+            onClick={handlePrintReport}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Print / PDF
+          </GlassButton>
+          <GlassButton
+            variant="ghost"
+            onClick={() => setShowSettingsModal(true)}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
+          </GlassButton>
+        </div>
       </motion.div>
 
       {/* Tabs */}
       <GlassTabs
         tabs={[
-          { id: 'daily', label: 'Daily Report', icon: <Calendar className="w-4 h-4" /> },
-          { id: 'monthly', label: 'Monthly Report', icon: <Calendar className="w-4 h-4" /> },
+          { id: 'daily', label: 'Daily', icon: <Calendar className="w-4 h-4" /> },
+          { id: 'weekly', label: 'Weekly', icon: <Calendar className="w-4 h-4" /> },
+          { id: 'monthly', label: 'Monthly', icon: <Calendar className="w-4 h-4" /> },
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}
@@ -386,7 +616,7 @@ export const AdminReports: React.FC = () => {
       </div>
 
       {/* Jobs Table */}
-      <JobsTable showDateColumn={activeTab === 'monthly'} />
+      <JobsTable showDateColumn={activeTab !== 'daily'} />
 
       {/* Receipt Modal */}
       {selectedJob && (
@@ -397,6 +627,7 @@ export const AdminReports: React.FC = () => {
             setShowReceiptModal(false);
             setSelectedJob(null);
           }}
+          electricityRate={parseFloat(electricityRate) || 7.5}
         />
       )}
 
@@ -405,7 +636,7 @@ export const AdminReports: React.FC = () => {
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         title="Pricing Settings"
-        description="Configure the rates used for cost calculations"
+        description="Configure the electricity rate for cost calculations"
         hideCloseButton={isSavingSettings}
       >
         <div className="space-y-4">
@@ -422,26 +653,12 @@ export const AdminReports: React.FC = () => {
             />
           </GlassFormField>
 
-          <GlassFormField
-            label="Markup Percentage (%)"
-            description="Profit margin added to base costs"
-          >
-            <GlassInput
-              type="number"
-              step="1"
-              min="0"
-              max="100"
-              value={markupPercentage}
-              onChange={(e) => setMarkupPercentage(e.target.value)}
-            />
-          </GlassFormField>
-
           <div className="p-3 rounded-xl glass-sub-card">
             <p className="text-sm text-white/60">
-              <strong>Formula:</strong> Total = (Filament + Electricity) × (1 + Markup%)
+              <strong>Formula:</strong> Total = Raw Cost + Electricity Cost
             </p>
             <p className="text-xs text-white/40 mt-1">
-              Electricity = Duration (hours) × Rate per hour
+              Electricity = Duration (hours) × ₱{electricityRate}/hr
             </p>
           </div>
 

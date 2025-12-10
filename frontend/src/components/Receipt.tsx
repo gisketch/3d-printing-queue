@@ -15,14 +15,27 @@ import {
   Download,
 } from 'lucide-react';
 
+// Default electricity rate (PHP per hour)
+const DEFAULT_ELECTRICITY_RATE = 7.5;
+
 interface ReceiptProps {
   job: Job;
   isOpen: boolean;
   onClose: () => void;
+  electricityRate?: number;
 }
 
-export const Receipt: React.FC<ReceiptProps> = ({ job, isOpen, onClose }) => {
+export const Receipt: React.FC<ReceiptProps> = ({ job, isOpen, onClose, electricityRate = DEFAULT_ELECTRICITY_RATE }) => {
   const receiptRef = useRef<HTMLDivElement>(null);
+
+  // Calculate costs in frontend
+  const durationMin = job.status === 'completed' && job.actual_duration_min 
+    ? job.actual_duration_min 
+    : (job.estimated_duration_min || 0);
+  const durationHours = durationMin / 60;
+  const rawCost = job.price_pesos || 0;
+  const electricityCost = Math.round(durationHours * electricityRate * 100) / 100;
+  const totalCost = Math.round((rawCost + electricityCost) * 100) / 100;
 
   const handlePrint = () => {
     const printContent = receiptRef.current;
@@ -193,20 +206,16 @@ export const Receipt: React.FC<ReceiptProps> = ({ job, isOpen, onClose }) => {
             <div class="section">
               <div class="section-title">Cost Breakdown</div>
               <div class="cost-row">
-                <span class="cost-label">Filament Cost</span>
-                <span class="cost-value">₱${(job.filament_cost || 0).toFixed(2)}</span>
+                <span class="cost-label">Raw Cost</span>
+                <span class="cost-value">₱${rawCost.toFixed(2)}</span>
               </div>
               <div class="cost-row">
                 <span class="cost-label">Electricity Cost</span>
-                <span class="cost-value">₱${(job.electricity_cost || 0).toFixed(2)}</span>
-              </div>
-              <div class="cost-row">
-                <span class="cost-label">Service Markup</span>
-                <span class="cost-value">₱${(job.markup_cost || 0).toFixed(2)}</span>
+                <span class="cost-value">₱${electricityCost.toFixed(2)}</span>
               </div>
               <div class="total-row">
                 <span>TOTAL</span>
-                <span>₱${(job.price_pesos || 0).toFixed(2)}</span>
+                <span>₱${totalCost.toFixed(2)}</span>
               </div>
             </div>
             
@@ -304,17 +313,18 @@ export const Receipt: React.FC<ReceiptProps> = ({ job, isOpen, onClose }) => {
               Cost Breakdown
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-white/60">Filament Cost</span>
-              <span className="text-white">₱{(job.filament_cost || 0).toFixed(2)}</span>
+              <span className="text-white/60">Raw Cost</span>
+              <span className="text-white">₱{rawCost.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-white/60">Electricity Cost</span>
-              <span className="text-white">₱{(job.electricity_cost || 0).toFixed(2)}</span>
+              <span className="text-white">₱{electricityCost.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-white/60">Service Markup</span>
-              <span className="text-white">₱{(job.markup_cost || 0).toFixed(2)}</span>
-            </div>
+            {job.status !== 'completed' && job.estimated_duration_min && (
+              <p className="text-xs text-white/40 italic">
+                * Electricity based on estimated duration
+              </p>
+            )}
           </div>
 
           {/* Total */}
@@ -322,7 +332,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ job, isOpen, onClose }) => {
             <div className="flex justify-between items-center">
               <span className="text-lg font-semibold text-white">TOTAL</span>
               <span className="text-2xl font-bold text-emerald-400">
-                ₱{(job.price_pesos || 0).toFixed(2)}
+                ₱{totalCost.toFixed(2)}
               </span>
             </div>
           </div>

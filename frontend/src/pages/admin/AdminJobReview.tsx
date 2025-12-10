@@ -75,7 +75,7 @@ export const AdminJobReview: React.FC = () => {
     const mins = parseInt(minsInput) || 0;
 
     if (isNaN(filamentCost) || filamentCost <= 0) {
-      setApproveError('Please enter a valid filament cost');
+      setApproveError('Please enter a valid raw cost');
       return;
     }
 
@@ -344,7 +344,7 @@ export const AdminJobReview: React.FC = () => {
             </p>
           </div>
 
-          <GlassFormField label="Filament Cost (PHP)" description="Raw filament cost from your slicer" required>
+          <GlassFormField label="Raw Cost (PHP)" description="Total material and consumables cost" required>
             <GlassInput
               type="number"
               step="0.01"
