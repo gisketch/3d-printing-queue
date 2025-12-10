@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GlassCard,
@@ -29,7 +29,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useHasActiveJob, useJobs } from '../hooks/useJobs';
 import { createJob } from '../services/jobService';
-import { formatDuration, formatRelativeTime } from '../lib/utils';
+import { formatDuration, formatRelativeTime, getPrintingProgress } from '../lib/utils';
 import { JOB_STATUS_CONFIG } from '../types';
 import {
   Plus,
@@ -47,6 +47,13 @@ import {
 } from 'lucide-react';
 
 export const UserDashboard: React.FC = () => {
+  const [nowMs, setNowMs] = useState(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 5000);
+    return () => clearInterval(id);
+  }, []);
+
   const { user } = useAuth();
   const { hasActiveJob, activeJob, isLoading: checkingActive } = useHasActiveJob(user?.id);
   const { jobs, isLoading: loadingJobs } = useJobs({ userId: user?.id });
@@ -56,7 +63,12 @@ export const UserDashboard: React.FC = () => {
   const { jobs: queuedJobs } = useJobs({ status: 'queued' });
 
   const currentPrintingJob = printingJobs[0] || null;
-  const totalQueueTime = queuedJobs.reduce((acc, job) => acc + (job.estimated_duration_min || 0), 0);
+  const currentPrintingProgress = currentPrintingJob
+    ? getPrintingProgress(currentPrintingJob.estimated_duration_min, currentPrintingJob.updated, nowMs)
+    : null;
+  const queuedTime = queuedJobs.reduce((acc, job) => acc + (job.estimated_duration_min || 0), 0);
+  const printingTimeLeft = currentPrintingProgress?.remainingMinutes || 0;
+  const totalQueueTime = queuedTime + printingTimeLeft;
 
   // New Job Modal
   const [showNewJobModal, setShowNewJobModal] = useState(false);
@@ -80,7 +92,7 @@ export const UserDashboard: React.FC = () => {
     }
 
     if (!stlFile && !stlLink.trim()) {
-      setSubmitError('Please upload an STL file or provide a link');
+      setSubmitError('Please upload an STL or G-code file or provide a link');
       return;
     }
 
@@ -235,9 +247,11 @@ export const UserDashboard: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-white/60">Progress</span>
-                  <span className="text-white">In Progress</span>
+                  <span className="text-white">
+                    {currentPrintingProgress ? `${formatDuration(currentPrintingProgress.remainingMinutes)} left` : 'In Progress'}
+                  </span>
                 </div>
-                <GlassProgress value={50} variant="success" size="lg" />
+                <GlassProgress value={currentPrintingProgress?.progress ?? 0} variant="success" size="lg" />
                 <p className="text-xs text-white/50">
                   Started {formatRelativeTime(currentPrintingJob.updated)}
                 </p>
@@ -536,7 +550,7 @@ export const UserDashboard: React.FC = () => {
             />
 
             <GlassFormField
-              label="STL File"
+              label="STL or G-code File"
               description="Upload your 3D model file (max 50MB)"
             >
               {stlFile ? (
@@ -547,9 +561,9 @@ export const UserDashboard: React.FC = () => {
               ) : (
                 <GlassFileUpload
                   onFilesSelected={(files) => setStlFile(files[0] || null)}
-                  title="Drop STL file here or click to upload"
-                  description="STL files up to 50MB"
-                  accept=".stl"
+                  title="Drop STL or G-code file here or click to upload"
+                  description="STL or G-code files up to 50MB"
+                  accept=".stl,.gcode"
                   maxSize={50 * 1024 * 1024}
                 />
               )}
@@ -565,7 +579,7 @@ export const UserDashboard: React.FC = () => {
             </div>
 
             <GlassInput
-              label="STL File Link"
+              label="STL/G-code File Link"
               placeholder="https://drive.google.com/..."
               value={stlLink}
               onChange={(e) => setStlLink(e.target.value)}

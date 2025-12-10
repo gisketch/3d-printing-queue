@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   GlassCard,
@@ -20,26 +20,38 @@ import {
 
 } from '../components/ui';
 import { useJobs } from '../hooks/useJobs';
-import { formatDuration, formatRelativeTime } from '../lib/utils';
+import { formatDuration, formatRelativeTime, getPrintingProgress } from '../lib/utils';
 
 import { Printer, Clock, Users, Loader2, CheckCircle2, History, Zap, TrendingUp } from 'lucide-react';
 
 export const QueueBoard: React.FC = () => {
+  const [nowMs, setNowMs] = useState(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 5000);
+    return () => clearInterval(id);
+  }, []);
+
   // Get all active jobs
   const { jobs: printingJobs, isLoading: loadingPrinting } = useJobs({ status: 'printing' });
   const { jobs: queuedJobs, isLoading: loadingQueued } = useJobs({ status: 'queued' });
   const { jobs: completedJobs, isLoading: loadingCompleted } = useJobs({ status: 'completed' });
 
   const currentJob = printingJobs[0] || null;
+  const currentProgress = currentJob
+    ? getPrintingProgress(currentJob.estimated_duration_min, currentJob.updated, nowMs)
+    : null;
   const recentCompleted = completedJobs.slice(0, 5);
 
   const isLoading = loadingPrinting || loadingQueued || loadingCompleted;
 
   // Calculate total queue time
-  const totalQueueTime = queuedJobs.reduce(
+  const queuedTime = queuedJobs.reduce(
     (acc, job) => acc + (job.estimated_duration_min || 0),
     0
   );
+  const printingTimeLeft = currentProgress?.remainingMinutes || 0;
+  const totalQueueTime = queuedTime + printingTimeLeft;
 
   if (isLoading) {
     return (
@@ -116,9 +128,11 @@ export const QueueBoard: React.FC = () => {
                 <div className="mt-auto space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-white/60">Progress</span>
-                    <span className="text-white">In Progress</span>
+                    <span className="text-white">
+                      {currentProgress ? formatDuration(currentProgress.remainingMinutes) + ' left' : 'In Progress'}
+                    </span>
                   </div>
-                  <GlassProgress value={50} variant="success" size="lg" />
+                  <GlassProgress value={currentProgress?.progress ?? 0} variant="success" size="lg" />
                   <p className="text-xs text-white/50">
                     Started {formatRelativeTime(currentJob.updated)}
                   </p>

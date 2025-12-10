@@ -41,7 +41,7 @@ export function useJobs(options: UseJobsOptions = {}) {
       filter = filters.join(' && ');
 
       const records = await pb.collection('jobs').getFullList<Job>({
-        sort: '-priority_score,-created',
+        sort: '-priority_score,created',
         expand: 'user',
         filter: filter || undefined,
       });

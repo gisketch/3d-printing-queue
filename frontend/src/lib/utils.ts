@@ -67,7 +67,31 @@ export function getFileExtension(filename: string): string {
  */
 export function isValidSTLFile(file: File): boolean {
   const extension = getFileExtension(file.name);
-  return extension === 'stl';
+  return extension === 'stl' || extension === 'gcode';
+}
+
+/**
+ * Calculate live print progress and remaining time
+ */
+export function getPrintingProgress(
+  estimatedMinutes: number | undefined,
+  startedAt: Date | string | undefined,
+  nowMs: number = Date.now()
+): { progress: number; remainingMinutes: number } {
+  if (!estimatedMinutes || estimatedMinutes <= 0 || !startedAt) {
+    return { progress: 0, remainingMinutes: 0 };
+  }
+
+  const startMs = new Date(startedAt).getTime();
+  const elapsedMs = Math.max(0, nowMs - startMs);
+  const totalMs = estimatedMinutes * 60 * 1000;
+  const progress = Math.min(100, (elapsedMs / totalMs) * 100);
+  const remainingMs = Math.max(0, totalMs - elapsedMs);
+
+  return {
+    progress,
+    remainingMinutes: Math.ceil(remainingMs / 60000),
+  };
 }
 
 /**

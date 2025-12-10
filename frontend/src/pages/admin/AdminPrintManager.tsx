@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   GlassCard,
@@ -24,7 +24,7 @@ import {
 } from '../../components/ui';
 import { useJobs } from '../../hooks/useJobs';
 import { startPrinting, completeJob, failJob } from '../../services/jobService';
-import { formatDuration, formatRelativeTime } from '../../lib/utils';
+import { formatDuration, formatRelativeTime, getPrintingProgress } from '../../lib/utils';
 import type { Job } from '../../types';
 import {
   Play,
@@ -40,12 +40,22 @@ import {
 } from 'lucide-react';
 
 export const AdminPrintManager: React.FC = () => {
+  const [nowMs, setNowMs] = useState(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 5000);
+    return () => clearInterval(id);
+  }, []);
+
   // Get printing and queued jobs
   const { jobs: printingJobs, isLoading: loadingPrinting } = useJobs({ status: 'printing' });
   const { jobs: queuedJobs, isLoading: loadingQueued } = useJobs({ status: 'queued' });
   const { jobs: completedJobs, isLoading: loadingCompleted } = useJobs({ status: 'completed' });
 
   const currentJob = printingJobs[0] || null;
+  const currentProgress = currentJob
+    ? getPrintingProgress(currentJob.estimated_duration_min, currentJob.updated, nowMs)
+    : null;
   const nextJob = queuedJobs[0] || null;
   const recentCompleted = completedJobs.slice(0, 5);
 
@@ -137,7 +147,9 @@ export const AdminPrintManager: React.FC = () => {
   const isLoading = loadingPrinting || loadingQueued || loadingCompleted;
 
   // Calculate total queue time
-  const totalQueueTime = queuedJobs.reduce((acc, job) => acc + (job.estimated_duration_min || 0), 0);
+  const queuedTime = queuedJobs.reduce((acc, job) => acc + (job.estimated_duration_min || 0), 0);
+  const printingTimeLeft = currentProgress?.remainingMinutes || 0;
+  const totalQueueTime = queuedTime + printingTimeLeft;
 
   return (
     <div className="space-y-6">
@@ -205,9 +217,11 @@ export const AdminPrintManager: React.FC = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-white/60">Progress</span>
-                        <span className="text-white">In Progress</span>
+                        <span className="text-white">
+                          {currentProgress ? `${formatDuration(currentProgress.remainingMinutes)} left` : 'In Progress'}
+                        </span>
                       </div>
-                      <GlassProgress value={50} variant="glow" />
+                      <GlassProgress value={currentProgress?.progress ?? 0} variant="glow" />
                       <p className="text-xs text-white/40">
                         Started {formatRelativeTime(currentJob.updated)}
                       </p>

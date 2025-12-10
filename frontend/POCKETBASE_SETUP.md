@@ -32,7 +32,7 @@ Create a new collection called `jobs` with these fields:
 | Field Name | Type | Options |
 |------------|------|---------|
 | `project_name` | Text | Required, Max: 200 |
-| `stl_file` | File | Max size: 50MB, Types: .stl |
+| `stl_file` | File | Max size: 50MB, Types: .stl, .gcode |
 | `stl_link` | URL | - |
 | `status` | Select | Values: `pending_review`, `queued`, `printing`, `completed`, `rejected`, `failed`. Required |
 | `admin_notes` | Text | Max: 1000 |

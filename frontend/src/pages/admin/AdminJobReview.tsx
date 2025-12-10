@@ -184,7 +184,7 @@ export const AdminJobReview: React.FC = () => {
           <div>
             <h3 className="font-medium text-white mb-4">Review Process</h3>
             <ol className="text-sm text-white/60 space-y-1 list-decimal list-inside">
-              <li>Download or open the STL file</li>
+              <li>Download or open the STL/G-code file</li>
               <li>Open in your slicer software (Cura/PrusaSlicer)</li>
               <li>Check for errors and get time estimate</li>
               <li>Calculate price based on filament usage</li>
@@ -258,7 +258,7 @@ export const AdminJobReview: React.FC = () => {
                           onClick={() => downloadSTL(job)}
                         >
                           <Download className="w-4 h-4 mr-1" />
-                          STL
+                          File
                         </GlassButton>
                       )}
                       {job.stl_link && (
