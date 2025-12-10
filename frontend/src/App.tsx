@@ -10,6 +10,7 @@ import {
   AdminUserRequests,
   AdminJobReview,
   AdminPrintManager,
+  AdminReports,
 } from './pages';
 
 function App() {
@@ -62,6 +63,14 @@ function App() {
             element={
               <ProtectedRoute requireAdmin>
                 <AdminPrintManager />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminReports />
               </ProtectedRoute>
             }
           />

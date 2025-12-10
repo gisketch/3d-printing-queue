@@ -23,6 +23,7 @@ import {
   LogOut,
   Printer,
   HelpCircle,
+  BarChart3,
 } from 'lucide-react';
 
 export const DashboardLayout: React.FC = () => {
@@ -100,6 +101,9 @@ export const DashboardLayout: React.FC = () => {
                   </GlassSidebarNavLink>
                   <GlassSidebarNavLink to="/admin/users" icon={<Users className="w-4 h-4" />}>
                     User Requests
+                  </GlassSidebarNavLink>
+                  <GlassSidebarNavLink to="/admin/reports" icon={<BarChart3 className="w-4 h-4" />}>
+                    Reports
                   </GlassSidebarNavLink>
                 </div>
               </GlassSidebarGroup>

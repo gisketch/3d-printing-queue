@@ -70,12 +70,12 @@ export const AdminJobReview: React.FC = () => {
   const confirmApprove = async () => {
     if (!selectedJob) return;
 
-    const price = parseFloat(priceInput);
+    const filamentCost = parseFloat(priceInput);
     const hours = parseInt(hoursInput) || 0;
     const mins = parseInt(minsInput) || 0;
 
-    if (isNaN(price) || price <= 0) {
-      setApproveError('Please enter a valid price');
+    if (isNaN(filamentCost) || filamentCost <= 0) {
+      setApproveError('Please enter a valid filament cost');
       return;
     }
 
@@ -87,7 +87,7 @@ export const AdminJobReview: React.FC = () => {
     setIsApproving(true);
     try {
       await approveJob(selectedJob.id, {
-        price_pesos: price,
+        filament_cost: filamentCost,
         estimated_duration_hours: hours,
         estimated_duration_mins: mins,
         admin_notes: notesInput || undefined,
@@ -344,12 +344,12 @@ export const AdminJobReview: React.FC = () => {
             </p>
           </div>
 
-          <GlassFormField label="Price (PHP)" required>
+          <GlassFormField label="Filament Cost (PHP)" description="Raw filament cost from your slicer" required>
             <GlassInput
               type="number"
               step="0.01"
               min="0"
-              placeholder="e.g., 150.00"
+              placeholder="e.g., 50.00"
               value={priceInput}
               onChange={(e) => setPriceInput(e.target.value)}
             />

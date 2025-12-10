@@ -1,5 +1,68 @@
 import pb from '../lib/pocketbase';
-import type { Job, JobSubmissionFormData, JobApprovalFormData } from '../types';
+import type { Job, JobSubmissionFormData, JobApprovalFormData, Settings } from '../types';
+
+// Default settings values (fallback if not configured)
+const DEFAULT_ELECTRICITY_RATE = 7.5; // PHP per hour
+const DEFAULT_MARKUP_PERCENTAGE = 20; // 20%
+
+// Fetch a setting value
+export async function getSetting(key: string): Promise<number | null> {
+  try {
+    const record = await pb.collection('settings').getFirstListItem<Settings>(`key = "${key}"`);
+    return record.value;
+  } catch {
+    return null;
+  }
+}
+
+// Fetch all settings
+export async function getAllSettings(): Promise<Record<string, number>> {
+  try {
+    const records = await pb.collection('settings').getFullList<Settings>();
+    const settings: Record<string, number> = {};
+    records.forEach(r => { settings[r.key] = r.value; });
+    return settings;
+  } catch {
+    return {};
+  }
+}
+
+// Update a setting
+export async function updateSetting(key: string, value: number): Promise<void> {
+  try {
+    const record = await pb.collection('settings').getFirstListItem<Settings>(`key = "${key}"`);
+    await pb.collection('settings').update(record.id, { value });
+  } catch {
+    // Setting doesn't exist, create it
+    await pb.collection('settings').create({ key, value });
+  }
+}
+
+// Generate receipt number: 3DNTZ-YYYYMMDD-XXXX
+export function generateReceiptNumber(): string {
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const random = Math.floor(1000 + Math.random() * 9000);
+  return `3DNTZ-${dateStr}-${random}`;
+}
+
+// Calculate cost breakdown
+export async function calculateCosts(
+  filamentCost: number,
+  estimatedMinutes: number
+): Promise<{ electricityCost: number; markupCost: number; totalCost: number }> {
+  const settings = await getAllSettings();
+  const electricityRate = settings['electricity_rate_per_hour'] ?? DEFAULT_ELECTRICITY_RATE;
+  const markupPercentage = settings['markup_percentage'] ?? DEFAULT_MARKUP_PERCENTAGE;
+
+  const hours = estimatedMinutes / 60;
+  const electricityCost = Math.round(hours * electricityRate * 100) / 100;
+  const subtotal = filamentCost + electricityCost;
+  const markupCost = Math.round(subtotal * (markupPercentage / 100) * 100) / 100;
+  const totalCost = Math.round((subtotal + markupCost) * 100) / 100;
+
+  return { electricityCost, markupCost, totalCost };
+}
 
 // Create a new job submission
 export async function createJob(userId: string, data: JobSubmissionFormData): Promise<Job> {
@@ -24,9 +87,22 @@ export async function createJob(userId: string, data: JobSubmissionFormData): Pr
 export async function approveJob(jobId: string, data: JobApprovalFormData): Promise<Job> {
   const estimatedMinutes = (data.estimated_duration_hours * 60) + data.estimated_duration_mins;
 
+  // Calculate costs
+  const { electricityCost, markupCost, totalCost } = await calculateCosts(
+    data.filament_cost,
+    estimatedMinutes
+  );
+
+  // Generate receipt number
+  const receiptNumber = generateReceiptNumber();
+
   return await pb.collection('jobs').update<Job>(jobId, {
     status: 'queued',
-    price_pesos: data.price_pesos,
+    filament_cost: data.filament_cost,
+    electricity_cost: electricityCost,
+    markup_cost: markupCost,
+    price_pesos: totalCost,
+    receipt_number: receiptNumber,
     estimated_duration_min: estimatedMinutes,
     admin_notes: data.admin_notes,
     // Priority score will be calculated by PocketBase hooks

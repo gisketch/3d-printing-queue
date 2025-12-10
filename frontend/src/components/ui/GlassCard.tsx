@@ -158,6 +158,7 @@ export const GlassCardFooter: React.FC<{
 export interface StatCardProps {
   label: string;
   value: string | number;
+  subValue?: string;
   icon?: React.ReactNode;
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
   trend?: { value: number; label: string };
@@ -196,6 +197,7 @@ const statVariantStyles = {
 export const StatCard: React.FC<StatCardProps> = ({
   label,
   value,
+  subValue,
   icon,
   variant = 'default',
   trend,
@@ -247,6 +249,11 @@ export const StatCard: React.FC<StatCardProps> = ({
               {value}
             </span>
           </div>
+
+          {/* Sub Value (e.g., forecasted revenue) */}
+          {subValue && (
+            <p className="text-xs text-white/40 mt-1">{subValue}</p>
+          )}
 
           {/* Trend */}
           {trend && (

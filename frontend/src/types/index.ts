@@ -30,7 +30,11 @@ export interface Job extends RecordModel {
   stl_link?: string; // Optional external link
   status: JobStatus;
   admin_notes?: string;
-  price_pesos?: number;
+  price_pesos?: number; // Total cost (calculated)
+  filament_cost?: number; // Raw filament cost from slicer
+  electricity_cost?: number; // Calculated from duration * rate
+  markup_cost?: number; // Calculated markup
+  receipt_number?: string; // Auto-generated receipt ID (3DNTZ-YYYYMMDD-XXXX)
   estimated_duration_min?: number;
   actual_duration_min?: number;
   priority_score: number;
@@ -38,6 +42,13 @@ export interface Job extends RecordModel {
   expand?: {
     user?: User;
   };
+}
+
+// Settings record type
+export interface Settings extends RecordModel {
+  key: string;
+  value: number;
+  description?: string;
 }
 
 // User request for account (pending approval)
@@ -66,7 +77,7 @@ export interface JobSubmissionFormData {
 }
 
 export interface JobApprovalFormData {
-  price_pesos: number;
+  filament_cost: number;
   estimated_duration_hours: number;
   estimated_duration_mins: number;
   admin_notes?: string;

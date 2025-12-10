@@ -26,11 +26,12 @@ import {
   GlassSeparator,
   GlassTabs,
 } from '../components/ui';
+import { Receipt } from '../components/Receipt';
 import { useAuth } from '../context/AuthContext';
 import { useHasActiveJob, useJobs } from '../hooks/useJobs';
 import { createJob } from '../services/jobService';
 import { formatDuration, formatRelativeTime, getPrintingProgress } from '../lib/utils';
-import { JOB_STATUS_CONFIG } from '../types';
+import { JOB_STATUS_CONFIG, type Job } from '../types';
 import {
   Plus,
   Clock,
@@ -43,6 +44,7 @@ import {
   Zap,
   Sparkles,
   TrendingUp,
+  Receipt as ReceiptIcon,
   FileText,
 } from 'lucide-react';
 
@@ -81,6 +83,15 @@ export const UserDashboard: React.FC = () => {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
+
+  // Receipt modal state
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [selectedReceiptJob, setSelectedReceiptJob] = useState<Job | null>(null);
+
+  const handleViewReceipt = (job: Job) => {
+    setSelectedReceiptJob(job);
+    setShowReceiptModal(true);
+  };
 
   const handleSubmitJob = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -403,6 +414,7 @@ export const UserDashboard: React.FC = () => {
                         <GlassTableHead>Duration</GlassTableHead>
                         <GlassTableHead>Price</GlassTableHead>
                         <GlassTableHead>Submitted</GlassTableHead>
+                        <GlassTableHead className="text-right">Receipt</GlassTableHead>
                       </tr>
                     </GlassTableHeader>
                     <GlassTableBody>
@@ -431,6 +443,18 @@ export const UserDashboard: React.FC = () => {
                           </GlassTableCell>
                           <GlassTableCell className="text-white/50">
                             {formatRelativeTime(job.created)}
+                          </GlassTableCell>
+                          <GlassTableCell className="text-right">
+                            {job.status !== 'pending_review' && (
+                              <GlassButton
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleViewReceipt(job)}
+                              >
+                                <ReceiptIcon className="w-4 h-4 mr-1" />
+                                View
+                              </GlassButton>
+                            )}
                           </GlassTableCell>
                         </GlassTableRow>
                       ))}
@@ -466,6 +490,7 @@ export const UserDashboard: React.FC = () => {
                       <GlassTableHead>Duration</GlassTableHead>
                       <GlassTableHead>Price</GlassTableHead>
                       <GlassTableHead>Completed</GlassTableHead>
+                      <GlassTableHead className="text-right">Receipt</GlassTableHead>
                     </tr>
                   </GlassTableHeader>
                   <GlassTableBody>
@@ -488,6 +513,18 @@ export const UserDashboard: React.FC = () => {
                         </GlassTableCell>
                         <GlassTableCell className="text-white/50">
                           {formatRelativeTime(job.updated)}
+                        </GlassTableCell>
+                        <GlassTableCell className="text-right">
+                          {job.status === 'completed' && (
+                            <GlassButton
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleViewReceipt(job)}
+                            >
+                              <ReceiptIcon className="w-4 h-4 mr-1" />
+                              View
+                            </GlassButton>
+                          )}
                         </GlassTableCell>
                       </GlassTableRow>
                     ))}
@@ -608,6 +645,18 @@ export const UserDashboard: React.FC = () => {
           </form>
         )}
       </GlassModal>
+
+      {/* Receipt Modal */}
+      {selectedReceiptJob && (
+        <Receipt
+          job={selectedReceiptJob}
+          isOpen={showReceiptModal}
+          onClose={() => {
+            setShowReceiptModal(false);
+            setSelectedReceiptJob(null);
+          }}
+        />
+      )}
 
       {/* Floating Action Button (Mobile) */}
       <motion.div
