@@ -157,7 +157,7 @@ export const GlassCardFooter: React.FC<{
 // Stat Card variant
 export interface StatCardProps {
   label: string;
-  value: string | number;
+  value: React.ReactNode;
   subValue?: string;
   icon?: React.ReactNode;
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';

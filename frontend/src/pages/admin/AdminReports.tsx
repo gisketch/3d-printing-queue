@@ -23,7 +23,7 @@ import {
 } from '../../components/ui';
 import { Receipt } from '../../components/Receipt';
 import { useJobs } from '../../hooks/useJobs';
-import { getAllSettings, updateSetting } from '../../services/jobService';
+import { getAllSettings, updateSetting, togglePaid } from '../../services/jobService';
 import { formatRelativeTime } from '../../lib/utils';
 import type { Job } from '../../types';
 import { JOB_STATUS_CONFIG } from '../../types';
@@ -39,6 +39,7 @@ import {
   Receipt as ReceiptIcon,
   Printer,
   Download,
+  AlertCircle,
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 15;
@@ -72,6 +73,46 @@ export const AdminReports: React.FC = () => {
   // Settings state
   const [electricityRate, setElectricityRate] = useState('7.5');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  // Local state for optimistic paid status updates
+  const [localPaidStatus, setLocalPaidStatus] = useState<Record<string, boolean>>({});
+
+  // Paid Status Modal
+  const [showPaidModal, setShowPaidModal] = useState(false);
+  const [paidModalJob, setPaidModalJob] = useState<Job | null>(null);
+  const [isUpdatingPaid, setIsUpdatingPaid] = useState(false);
+
+  // Handle opening paid modal
+  const handleOpenPaidModal = (job: Job) => {
+    setPaidModalJob(job);
+    setShowPaidModal(true);
+  };
+
+  // Handle paid status change from modal
+  const handleConfirmPaidChange = async (newPaidStatus: boolean) => {
+    if (!paidModalJob) return;
+    
+    setIsUpdatingPaid(true);
+    setLocalPaidStatus(prev => ({ ...prev, [paidModalJob.id]: newPaidStatus }));
+    try {
+      await togglePaid(paidModalJob.id, newPaidStatus);
+      setShowPaidModal(false);
+      setPaidModalJob(null);
+    } catch (err) {
+      setLocalPaidStatus(prev => ({ ...prev, [paidModalJob.id]: !newPaidStatus }));
+      console.error('Failed to update paid status:', err);
+    } finally {
+      setIsUpdatingPaid(false);
+    }
+  };
+
+  // Helper to get paid status (local override or from job)
+  const getIsPaid = (job: Job) => {
+    if (localPaidStatus[job.id] !== undefined) {
+      return localPaidStatus[job.id];
+    }
+    return job.is_paid || false;
+  };
 
   // Load settings
   useEffect(() => {
@@ -134,18 +175,42 @@ export const AdminReports: React.FC = () => {
     const printing = filteredJobs.filter(j => j.status === 'printing');
     const queued = filteredJobs.filter(j => j.status === 'queued');
     
+    // Calculate unpaid total (all non-pending jobs that are not paid)
+    const unpaidJobs = filteredJobs.filter(j => 
+      j.status !== 'pending_review' && 
+      j.status !== 'rejected' && 
+      !getIsPaid(j)
+    );
+    const unpaidTotal = unpaidJobs.reduce((acc, j) => acc + calculateTotal(j), 0);
+    
     const completedRevenue = completed.reduce((acc, j) => acc + calculateTotal(j), 0);
     const printingRevenue = printing.reduce((acc, j) => acc + calculateTotal(j), 0);
     const queuedRevenue = queued.reduce((acc, j) => acc + calculateTotal(j), 0);
     
+    // Calculate paid vs unpaid for completed
+    const completedPaid = completed.filter(j => getIsPaid(j)).reduce((acc, j) => acc + calculateTotal(j), 0);
+    const completedUnpaid = completedRevenue - completedPaid;
+    
+    // Calculate paid vs unpaid for printing
+    const printingPaid = printing.filter(j => getIsPaid(j)).reduce((acc, j) => acc + calculateTotal(j), 0);
+    const printingUnpaid = printingRevenue - printingPaid;
+    
+    // Calculate total unpaid
+    const totalUnpaid = completedUnpaid + printingUnpaid;
+    
     return {
       completed: completedRevenue,
+      completedUnpaid,
       printing: printingRevenue,
+      printingUnpaid,
       queued: queuedRevenue,
       total: completedRevenue + printingRevenue,
+      totalUnpaid,
       forecast: queuedRevenue,
+      unpaid: unpaidTotal,
+      unpaidCount: unpaidJobs.length,
     };
-  }, [filteredJobs, electricityRate]);
+  }, [filteredJobs, electricityRate, localPaidStatus]);
 
   // Pagination
   const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
@@ -203,6 +268,7 @@ export const AdminReports: React.FC = () => {
 
     const jobRows = filteredJobs.map(job => {
       const total = calculateJobTotal(job);
+      const isPaid = getIsPaid(job);
       return `
         <tr>
           <td>${job.receipt_number || job.id.slice(0, 10)}</td>
@@ -210,6 +276,7 @@ export const AdminReports: React.FC = () => {
           <td>${job.expand?.user?.name || 'Unknown'}</td>
           <td>${JOB_STATUS_CONFIG[job.status]?.label || job.status}</td>
           <td style="text-align: right;">₱${total.toFixed(2)}</td>
+          <td><span class="paid-badge ${isPaid ? 'paid' : 'unpaid'}">${isPaid ? 'Paid' : 'Unpaid'}</span></td>
           <td>${new Date(job.created).toLocaleDateString()}</td>
         </tr>
       `;
@@ -287,6 +354,22 @@ export const AdminReports: React.FC = () => {
             td {
               font-size: 14px;
             }
+            .paid-badge {
+              display: inline-block;
+              padding: 2px 8px;
+              border-radius: 9999px;
+              font-size: 11px;
+              font-weight: 600;
+              text-transform: uppercase;
+            }
+            .paid-badge.paid {
+              background: #d1fae5;
+              color: #059669;
+            }
+            .paid-badge.unpaid {
+              background: #fee2e2;
+              color: #dc2626;
+            }
             .total-row {
               font-weight: bold;
               background: #f0fdf4;
@@ -324,9 +407,9 @@ export const AdminReports: React.FC = () => {
               <div class="label">In Progress</div>
               <div class="value">₱${revenueStats.printing.toFixed(2)}</div>
             </div>
-            <div class="stat-box">
-              <div class="label">Queued (Forecast)</div>
-              <div class="value">₱${revenueStats.forecast.toFixed(2)}</div>
+            <div class="stat-box" style="border: 1px solid #ef4444;">
+              <div class="label" style="color: #dc2626;">Unpaid</div>
+              <div class="value" style="color: #dc2626;">₱${revenueStats.unpaid.toFixed(2)}</div>
             </div>
           </div>
 
@@ -338,15 +421,17 @@ export const AdminReports: React.FC = () => {
                 <th>User</th>
                 <th>Status</th>
                 <th style="text-align: right;">Cost</th>
+                <th>Paid</th>
                 <th>Date</th>
               </tr>
             </thead>
             <tbody>
-              ${jobRows || '<tr><td colspan="6" style="text-align: center; color: #666;">No jobs found</td></tr>'}
+              ${jobRows || '<tr><td colspan="7" style="text-align: center; color: #666;">No jobs found</td></tr>'}
               ${filteredJobs.length > 0 ? `
               <tr class="total-row">
                 <td colspan="4">TOTAL (${filteredJobs.length} jobs)</td>
                 <td style="text-align: right;">₱${filteredJobs.reduce((acc, j) => acc + calculateJobTotal(j), 0).toFixed(2)}</td>
+                <td></td>
                 <td></td>
               </tr>
               ` : ''}
@@ -426,6 +511,7 @@ export const AdminReports: React.FC = () => {
               <GlassTableHead>User</GlassTableHead>
               <GlassTableHead>Status</GlassTableHead>
               <GlassTableHead>Cost</GlassTableHead>
+              <GlassTableHead>Paid</GlassTableHead>
               <GlassTableHead>{showDateColumn ? 'Date' : 'Time'}</GlassTableHead>
               <GlassTableHead className="text-right">Receipt</GlassTableHead>
             </tr>
@@ -468,6 +554,16 @@ export const AdminReports: React.FC = () => {
                     <span className="text-emerald-400 font-medium">
                       ₱{calculateJobTotal(job).toFixed(2)}
                     </span>
+                  </GlassTableCell>
+                  <GlassTableCell>
+                    {job.status !== 'pending_review' && job.status !== 'rejected' && (
+                      <span
+                        className={`pill-clickable ${getIsPaid(job) ? 'pill-paid' : 'pill-unpaid'}`}
+                        onClick={() => handleOpenPaidModal(job)}
+                      >
+                        {getIsPaid(job) ? 'Paid' : 'Unpaid'}
+                      </span>
+                    )}
                   </GlassTableCell>
                   <GlassTableCell className="text-white/60">
                     {showDateColumn 
@@ -589,10 +685,10 @@ export const AdminReports: React.FC = () => {
       </GlassCard>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           label="Total Revenue"
-          value={`₱${revenueStats.total.toFixed(2)}`}
+          value={<>₱{(revenueStats.total - revenueStats.totalUnpaid).toFixed(2)}{revenueStats.totalUnpaid > 0 && <span className="stat-ghost-text">₱{revenueStats.totalUnpaid.toFixed(2)} unpaid</span>}</>}
           subValue={revenueStats.forecast > 0 ? `+₱${revenueStats.forecast.toFixed(2)} queued` : undefined}
           icon={<DollarSign className="w-5 h-5" />}
           variant="success"
@@ -600,18 +696,26 @@ export const AdminReports: React.FC = () => {
         />
         <StatCard
           label="Completed"
-          value={`₱${revenueStats.completed.toFixed(2)}`}
+          value={<>₱{(revenueStats.completed - revenueStats.completedUnpaid).toFixed(2)}{revenueStats.completedUnpaid > 0 && <span className="stat-ghost-text">₱{revenueStats.completedUnpaid.toFixed(2)} unpaid</span>}</>}
           icon={<TrendingUp className="w-5 h-5" />}
           variant="info"
           delay={0.2}
         />
         <StatCard
           label="In Progress"
-          value={`₱${revenueStats.printing.toFixed(2)}`}
+          value={<>₱{(revenueStats.printing - revenueStats.printingUnpaid).toFixed(2)}{revenueStats.printingUnpaid > 0 && <span className="stat-ghost-text">₱{revenueStats.printingUnpaid.toFixed(2)} unpaid</span>}</>}
           subValue={revenueStats.forecast > 0 ? `+₱${revenueStats.forecast.toFixed(2)} forecast` : undefined}
           icon={<Printer className="w-5 h-5" />}
           variant="warning"
           delay={0.25}
+        />
+        <StatCard
+          label="Unpaid"
+          value={`₱${revenueStats.unpaid.toFixed(2)}`}
+          subValue={revenueStats.unpaidCount > 0 ? `${revenueStats.unpaidCount} jobs` : undefined}
+          icon={<AlertCircle className="w-5 h-5" />}
+          variant="danger"
+          delay={0.3}
         />
       </div>
 
@@ -678,6 +782,58 @@ export const AdminReports: React.FC = () => {
               disabled={isSavingSettings}
             >
               {isSavingSettings ? 'Saving...' : 'Save Settings'}
+            </GlassButton>
+          </GlassModalFooter>
+        </div>
+      </GlassModal>
+
+      {/* Paid Status Modal */}
+      <GlassModal
+        isOpen={showPaidModal}
+        onClose={() => setShowPaidModal(false)}
+        title="Update Payment Status"
+        hideCloseButton={isUpdatingPaid}
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl glass-sub-card">
+            <p className="font-medium text-white">{paidModalJob?.project_name}</p>
+            <p className="text-sm text-white/60 mt-1">
+              by {paidModalJob?.expand?.user?.name}
+            </p>
+            <div className="flex items-center gap-3 mt-3">
+              <span className="text-cyan-400 font-semibold">
+                ₱{paidModalJob ? calculateJobTotal(paidModalJob).toFixed(2) : '0.00'}
+              </span>
+              <span className={`${paidModalJob && getIsPaid(paidModalJob) ? 'pill-paid' : 'pill-unpaid'}`}>
+                {paidModalJob && getIsPaid(paidModalJob) ? 'Paid' : 'Unpaid'}
+              </span>
+            </div>
+          </div>
+
+          <p className="text-sm text-white/60">
+            {paidModalJob && getIsPaid(paidModalJob)
+              ? 'Mark this job as unpaid?'
+              : 'Mark this job as paid?'}
+          </p>
+
+          <GlassModalFooter>
+            <GlassButton
+              variant="ghost"
+              className="flex-1"
+              onClick={() => setShowPaidModal(false)}
+              disabled={isUpdatingPaid}
+            >
+              Cancel
+            </GlassButton>
+            <GlassButton
+              variant={paidModalJob && getIsPaid(paidModalJob) ? 'danger' : 'success'}
+              className="flex-1"
+              onClick={() => handleConfirmPaidChange(!(paidModalJob && getIsPaid(paidModalJob)))}
+              disabled={isUpdatingPaid}
+            >
+              {isUpdatingPaid 
+                ? 'Updating...' 
+                : (paidModalJob && getIsPaid(paidModalJob) ? 'Mark Unpaid' : 'Mark Paid')}
             </GlassButton>
           </GlassModalFooter>
         </div>

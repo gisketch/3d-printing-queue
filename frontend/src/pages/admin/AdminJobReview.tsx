@@ -49,6 +49,7 @@ export const AdminJobReview: React.FC = () => {
   const [hoursInput, setHoursInput] = useState('');
   const [minsInput, setMinsInput] = useState('');
   const [notesInput, setNotesInput] = useState('');
+  const [isPaid, setIsPaid] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [approveError, setApproveError] = useState('');
 
@@ -63,6 +64,7 @@ export const AdminJobReview: React.FC = () => {
     setHoursInput('');
     setMinsInput('');
     setNotesInput('');
+    setIsPaid(false);
     setApproveError('');
     setShowApproveModal(true);
   };
@@ -91,7 +93,7 @@ export const AdminJobReview: React.FC = () => {
         estimated_duration_hours: hours,
         estimated_duration_mins: mins,
         admin_notes: notesInput || undefined,
-      });
+      }, isPaid);
       setShowApproveModal(false);
       setSelectedJob(null);
     } catch (err) {
@@ -390,6 +392,21 @@ export const AdminJobReview: React.FC = () => {
               onChange={(e) => setNotesInput(e.target.value)}
             />
           </GlassFormField>
+
+          {/* Mark as Paid toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl glass-sub-card">
+            <span className="text-sm text-white/80">Mark as Paid</span>
+            <label className="glass-toggle">
+              <input
+                type="checkbox"
+                checked={isPaid}
+                onChange={(e) => setIsPaid(e.target.checked)}
+              />
+              <span className="glass-toggle-track">
+                <span className="glass-toggle-thumb"></span>
+              </span>
+            </label>
+          </div>
 
           <GlassModalFooter>
             <GlassButton

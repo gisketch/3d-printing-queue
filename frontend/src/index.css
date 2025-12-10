@@ -894,3 +894,110 @@
 .glass-receipt-total {
   border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
 }
+
+/* ============================================
+   PAYMENT STATUS PILLS - PAID/UNPAID
+   ============================================ */
+
+/* Paid pill - emerald green */
+.pill-paid {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 9999px;
+  color: #6ee7b7; /* emerald-300 */
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.30);
+}
+
+/* Unpaid pill - red */
+.pill-unpaid {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 9999px;
+  color: #fca5a5; /* red-300 */
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.30);
+}
+
+/* Clickable pill - interactive version */
+.pill-clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pill-clickable:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+.pill-clickable.pill-paid:hover {
+  background: rgba(52, 211, 153, 0.25);
+  border-color: rgba(52, 211, 153, 0.45);
+}
+
+.pill-clickable.pill-unpaid:hover {
+  background: rgba(248, 113, 113, 0.25);
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+/* Ghost text for unpaid amounts in stat cards */
+.stat-ghost-text {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.75em;
+  font-weight: 500;
+  opacity: 0.45;
+  color: inherit;
+}
+
+/* ============================================
+   BALANCE NOTIFICATION - GLASSMORPHISM
+   ============================================ */
+
+.glass-balance-notification {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(248, 113, 113, 0.10);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  color: #fca5a5;
+}
+
+.glass-balance-notification-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(248, 113, 113, 0.15);
+}
+
+.glass-balance-notification-content {
+  flex: 1;
+}
+
+.glass-balance-notification-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fca5a5;
+  margin-bottom: 2px;
+}
+
+.glass-balance-notification-amount {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f87171;
+}

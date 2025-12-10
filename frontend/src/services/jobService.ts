@@ -84,7 +84,7 @@ export async function createJob(userId: string, data: JobSubmissionFormData): Pr
 }
 
 // Admin: Approve a job with pricing and duration
-export async function approveJob(jobId: string, data: JobApprovalFormData): Promise<Job> {
+export async function approveJob(jobId: string, data: JobApprovalFormData, isPaid: boolean = false): Promise<Job> {
   const estimatedMinutes = (data.estimated_duration_hours * 60) + data.estimated_duration_mins;
 
   // Generate receipt number
@@ -98,6 +98,7 @@ export async function approveJob(jobId: string, data: JobApprovalFormData): Prom
     receipt_number: receiptNumber,
     estimated_duration_min: estimatedMinutes,
     admin_notes: data.admin_notes,
+    is_paid: isPaid,
     // Priority score will be calculated by frontend service below
   });
 
@@ -126,7 +127,8 @@ export async function startPrinting(jobId: string): Promise<Job> {
 export async function completeJob(
   jobId: string,
   actualDurationHours: number,
-  actualDurationMins: number
+  actualDurationMins: number,
+  isPaid: boolean = false
 ): Promise<Job> {
   const actualMinutes = (actualDurationHours * 60) + actualDurationMins;
 
@@ -146,6 +148,7 @@ export async function completeJob(
   const updateData: Record<string, unknown> = {
     status: 'completed',
     actual_duration_min: actualMinutes,
+    is_paid: isPaid,
   };
 
   // Remove the STL file if it exists
@@ -171,6 +174,11 @@ export async function failJob(jobId: string, notes?: string): Promise<Job> {
   }
 
   return await pb.collection('jobs').update<Job>(jobId, updateData);
+}
+
+// Admin: Toggle payment status for a job
+export async function togglePaid(jobId: string, isPaid: boolean): Promise<Job> {
+  return await pb.collection('jobs').update<Job>(jobId, { is_paid: isPaid });
 }
 
 

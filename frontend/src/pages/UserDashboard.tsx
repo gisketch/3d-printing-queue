@@ -46,6 +46,7 @@ import {
   TrendingUp,
   Receipt as ReceiptIcon,
   FileText,
+  Wallet,
 } from 'lucide-react';
 
 export const UserDashboard: React.FC = () => {
@@ -163,6 +164,13 @@ export const UserDashboard: React.FC = () => {
   const totalPrints = jobs.filter(j => j.status === 'completed').length;
   const totalSpent = jobs.reduce((acc, j) => acc + calculateJobTotal(j), 0);
 
+  // Calculate unpaid balance for current user (queued, printing, or completed jobs that are not paid)
+  const unpaidJobs = jobs.filter(j => 
+    ['queued', 'printing', 'completed'].includes(j.status) && 
+    !j.is_paid
+  );
+  const unpaidBalance = unpaidJobs.reduce((acc, j) => acc + calculateJobTotal(j), 0);
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -230,6 +238,28 @@ export const UserDashboard: React.FC = () => {
         />
       </div>
 
+      {/* Unpaid Balance Notification */}
+      {unpaidBalance > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="glass-balance-notification"
+        >
+          <div className="glass-balance-notification-icon">
+            <Wallet className="w-5 h-5 text-red-400" />
+          </div>
+          <div className="glass-balance-notification-content">
+            <p className="glass-balance-notification-title">
+              Outstanding Balance
+            </p>
+            <p className="glass-balance-notification-amount">
+              ₱{unpaidBalance.toFixed(2)}
+            </p>
+          </div>
+          <span className="pill-unpaid">{unpaidJobs.length} unpaid</span>
+        </motion.div>
+      )}
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 gap-6">
         {/* Printer Status - Large Card */}
@@ -444,16 +474,23 @@ export const UserDashboard: React.FC = () => {
                             {job.project_name}
                           </GlassTableCell>
                           <GlassTableCell>
-                            <GlassBadge
-                              variant={
-                                job.status === 'printing' ? 'success' :
-                                job.status === 'queued' ? 'primary' :
-                                'warning'
-                              }
-                              pulse={job.status === 'printing'}
-                            >
-                              {JOB_STATUS_CONFIG[job.status].label}
-                            </GlassBadge>
+                            <div className="flex items-center gap-2">
+                              <GlassBadge
+                                variant={
+                                  job.status === 'printing' ? 'success' :
+                                  job.status === 'queued' ? 'primary' :
+                                  'warning'
+                                }
+                                pulse={job.status === 'printing'}
+                              >
+                                {JOB_STATUS_CONFIG[job.status].label}
+                              </GlassBadge>
+                              {job.status !== 'pending_review' && (
+                                <span className={job.is_paid ? 'pill-paid' : 'pill-unpaid'}>
+                                  {job.is_paid ? 'paid' : 'unpaid'}
+                                </span>
+                              )}
+                            </div>
                           </GlassTableCell>
                           <GlassTableCell>
                             {job.estimated_duration_min ? formatDuration(job.estimated_duration_min) : '-'}
@@ -520,9 +557,16 @@ export const UserDashboard: React.FC = () => {
                           {job.project_name}
                         </GlassTableCell>
                         <GlassTableCell>
-                          <GlassBadge variant={job.status === 'completed' ? 'success' : 'danger'}>
-                            {JOB_STATUS_CONFIG[job.status].label}
-                          </GlassBadge>
+                          <div className="flex items-center gap-2">
+                            <GlassBadge variant={job.status === 'completed' ? 'success' : 'danger'}>
+                              {JOB_STATUS_CONFIG[job.status].label}
+                            </GlassBadge>
+                            {job.status === 'completed' && (
+                              <span className={job.is_paid ? 'pill-paid' : 'pill-unpaid'}>
+                                {job.is_paid ? 'paid' : 'unpaid'}
+                              </span>
+                            )}
+                          </div>
                         </GlassTableCell>
                         <GlassTableCell>
                           {job.actual_duration_min ? formatDuration(job.actual_duration_min) :

@@ -101,9 +101,16 @@ export const QueueBoard: React.FC = () => {
                   <p className="text-sm text-white/50">Real-time monitoring</p>
                 </div>
               </div>
-              <GlassBadge variant={currentJob ? 'success' : 'default'} pulse={!!currentJob}>
-                {currentJob ? 'Printing' : 'Idle'}
-              </GlassBadge>
+              <div className="flex items-center gap-2">
+                <GlassBadge variant={currentJob ? 'success' : 'default'} pulse={!!currentJob}>
+                  {currentJob ? 'Printing' : 'Idle'}
+                </GlassBadge>
+                {currentJob && (
+                  <span className={currentJob.is_paid ? 'pill-paid' : 'pill-unpaid'}>
+                    {currentJob.is_paid ? 'paid' : 'unpaid'}
+                  </span>
+                )}
+              </div>
             </div>
 
             {currentJob ? (

@@ -23,7 +23,7 @@ import {
 
 } from '../../components/ui';
 import { useJobs } from '../../hooks/useJobs';
-import { startPrinting, completeJob, failJob, getSetting, recalculateAllQueuePriorities } from '../../services/jobService';
+import { startPrinting, completeJob, failJob, getSetting, recalculateAllQueuePriorities, togglePaid } from '../../services/jobService';
 import { formatDuration, formatRelativeTime, getPrintingProgress } from '../../lib/utils';
 import type { Job } from '../../types';
 import {
@@ -75,7 +75,7 @@ export const AdminPrintManager: React.FC = () => {
 
   const currentJob = printingJobs[0] || null;
   const currentProgress = currentJob
-    ? getPrintingProgress(currentJob.estimated_duration_min, currentJob.updated, nowMs)
+    ? getPrintingProgress(currentJob.estimated_duration_min, currentJob.approved_on, nowMs)
     : null;
   const nextJob = queuedJobs[0] || null;
   const recentCompleted = completedJobs.slice(0, 5);
@@ -84,6 +84,7 @@ export const AdminPrintManager: React.FC = () => {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completeHours, setCompleteHours] = useState('');
   const [completeMins, setCompleteMins] = useState('');
+  const [isCompletePaid, setIsCompletePaid] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
 
   // Fail Modal
@@ -96,6 +97,48 @@ export const AdminPrintManager: React.FC = () => {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isStarting, setIsStarting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Paid Status Modal
+  const [showPaidModal, setShowPaidModal] = useState(false);
+  const [paidModalJob, setPaidModalJob] = useState<Job | null>(null);
+  const [isUpdatingPaid, setIsUpdatingPaid] = useState(false);
+
+  // Local state for optimistic paid status updates
+  const [localPaidStatus, setLocalPaidStatus] = useState<Record<string, boolean>>({});
+
+  // Handle opening paid modal
+  const handleOpenPaidModal = (job: Job) => {
+    setPaidModalJob(job);
+    setShowPaidModal(true);
+  };
+
+  // Handle paid status change from modal
+  const handleConfirmPaidChange = async (newPaidStatus: boolean) => {
+    if (!paidModalJob) return;
+    
+    setIsUpdatingPaid(true);
+    // Optimistically update local state
+    setLocalPaidStatus(prev => ({ ...prev, [paidModalJob.id]: newPaidStatus }));
+    try {
+      await togglePaid(paidModalJob.id, newPaidStatus);
+      setShowPaidModal(false);
+      setPaidModalJob(null);
+    } catch (err) {
+      // Revert on error
+      setLocalPaidStatus(prev => ({ ...prev, [paidModalJob.id]: !newPaidStatus }));
+      console.error('Failed to update paid status:', err);
+    } finally {
+      setIsUpdatingPaid(false);
+    }
+  };
+
+  // Helper to get paid status (local override or from job)
+  const getIsPaid = (job: Job) => {
+    if (localPaidStatus[job.id] !== undefined) {
+      return localPaidStatus[job.id];
+    }
+    return job.is_paid || false;
+  };
 
   const handleRefreshQueue = async () => {
     setIsRefreshing(true);
@@ -134,6 +177,7 @@ export const AdminPrintManager: React.FC = () => {
     const estMins = (currentJob.estimated_duration_min || 0) % 60;
     setCompleteHours(estHours.toString());
     setCompleteMins(estMins.toString());
+    setIsCompletePaid(currentJob.is_paid || false);
     setShowCompleteModal(true);
   };
 
@@ -149,7 +193,7 @@ export const AdminPrintManager: React.FC = () => {
 
     setIsCompleting(true);
     try {
-      await completeJob(currentJob.id, hours, mins);
+      await completeJob(currentJob.id, hours, mins, isCompletePaid);
       setShowCompleteModal(false);
     } catch (err) {
       console.error(err);
@@ -380,6 +424,7 @@ export const AdminPrintManager: React.FC = () => {
                     <GlassTableHead>User</GlassTableHead>
                     <GlassTableHead>Duration</GlassTableHead>
                     <GlassTableHead>Price</GlassTableHead>
+                    <GlassTableHead>Paid</GlassTableHead>
                     <GlassTableHead className="text-right">Actions</GlassTableHead>
                   </GlassTableRow>
                 </GlassTableHeader>
@@ -400,6 +445,14 @@ export const AdminPrintManager: React.FC = () => {
                       </GlassTableCell>
                       <GlassTableCell className="text-cyan-400">
                         ₱{calculateJobTotal(job).toFixed(2)}
+                      </GlassTableCell>
+                      <GlassTableCell>
+                        <span
+                          className={`pill-clickable ${getIsPaid(job) ? 'pill-paid' : 'pill-unpaid'}`}
+                          onClick={() => handleOpenPaidModal(job)}
+                        >
+                          {getIsPaid(job) ? 'Paid' : 'Unpaid'}
+                        </span>
                       </GlassTableCell>
                       <GlassTableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -440,6 +493,7 @@ export const AdminPrintManager: React.FC = () => {
                     <GlassTableHead>Project</GlassTableHead>
                     <GlassTableHead>User</GlassTableHead>
                     <GlassTableHead>Duration</GlassTableHead>
+                    <GlassTableHead>Paid</GlassTableHead>
                     <GlassTableHead>Completed</GlassTableHead>
                   </GlassTableRow>
                 </GlassTableHeader>
@@ -454,6 +508,14 @@ export const AdminPrintManager: React.FC = () => {
                       </GlassTableCell>
                       <GlassTableCell className="text-white/60">
                         {formatDuration(job.actual_duration_min || job.estimated_duration_min || 0)}
+                      </GlassTableCell>
+                      <GlassTableCell>
+                        <span
+                          className={`pill-clickable ${getIsPaid(job) ? 'pill-paid' : 'pill-unpaid'}`}
+                          onClick={() => handleOpenPaidModal(job)}
+                        >
+                          {getIsPaid(job) ? 'Paid' : 'Unpaid'}
+                        </span>
                       </GlassTableCell>
                       <GlassTableCell className="text-white/40">
                         {formatRelativeTime(job.updated)}
@@ -559,6 +621,17 @@ export const AdminPrintManager: React.FC = () => {
             This updates the user's Karma score for queue fairness.
           </p>
 
+          {/* Mark as Paid checkbox */}
+          <div 
+            className="flex items-center justify-between p-3 rounded-xl glass-sub-card cursor-pointer"
+            onClick={() => setIsCompletePaid(!isCompletePaid)}
+          >
+            <span className="text-sm text-white/80">Mark as Paid</span>
+            <span className={`${isCompletePaid ? 'pill-paid' : 'pill-unpaid'}`}>
+              {isCompletePaid ? 'Paid' : 'Unpaid'}
+            </span>
+          </div>
+
           <GlassModalFooter>
             <GlassButton
               type="button"
@@ -617,6 +690,58 @@ export const AdminPrintManager: React.FC = () => {
               disabled={isFailing}
             >
               {isFailing ? 'Processing...' : 'Mark Failed'}
+            </GlassButton>
+          </GlassModalFooter>
+        </div>
+      </GlassModal>
+
+      {/* Paid Status Modal */}
+      <GlassModal
+        isOpen={showPaidModal}
+        onClose={() => setShowPaidModal(false)}
+        title="Update Payment Status"
+        hideCloseButton={isUpdatingPaid}
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl glass-sub-card">
+            <p className="font-medium text-white">{paidModalJob?.project_name}</p>
+            <p className="text-sm text-white/60 mt-1">
+              by {paidModalJob?.expand?.user?.name}
+            </p>
+            <div className="flex items-center gap-3 mt-3">
+              <span className="text-cyan-400 font-semibold">
+                ₱{paidModalJob ? calculateJobTotal(paidModalJob).toFixed(2) : '0.00'}
+              </span>
+              <span className={`${paidModalJob && getIsPaid(paidModalJob) ? 'pill-paid' : 'pill-unpaid'}`}>
+                {paidModalJob && getIsPaid(paidModalJob) ? 'Paid' : 'Unpaid'}
+              </span>
+            </div>
+          </div>
+
+          <p className="text-sm text-white/60">
+            {paidModalJob && getIsPaid(paidModalJob)
+              ? 'Mark this job as unpaid?'
+              : 'Mark this job as paid?'}
+          </p>
+
+          <GlassModalFooter>
+            <GlassButton
+              variant="ghost"
+              className="flex-1"
+              onClick={() => setShowPaidModal(false)}
+              disabled={isUpdatingPaid}
+            >
+              Cancel
+            </GlassButton>
+            <GlassButton
+              variant={paidModalJob && getIsPaid(paidModalJob) ? 'danger' : 'success'}
+              className="flex-1"
+              onClick={() => handleConfirmPaidChange(!(paidModalJob && getIsPaid(paidModalJob)))}
+              disabled={isUpdatingPaid}
+            >
+              {isUpdatingPaid 
+                ? 'Updating...' 
+                : (paidModalJob && getIsPaid(paidModalJob) ? 'Mark Unpaid' : 'Mark Paid')}
             </GlassButton>
           </GlassModalFooter>
         </div>
