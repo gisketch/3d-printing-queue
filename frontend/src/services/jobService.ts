@@ -154,7 +154,7 @@ export async function completeJob(
 export async function failJob(jobId: string, notes?: string): Promise<Job> {
   // Delete the STL file to save space
   const job = await pb.collection('jobs').getOne<Job>(jobId);
-  
+
   const updateData: Record<string, unknown> = {
     status: 'failed',
     admin_notes: notes,
@@ -165,6 +165,15 @@ export async function failJob(jobId: string, notes?: string): Promise<Job> {
   }
 
   return await pb.collection('jobs').update<Job>(jobId, updateData);
+}
+
+// Admin: Recalculate priority manually
+export async function recalculateJobPriority(jobId: string): Promise<Job> {
+  // Re-saving with 'queued' status triggers the pb hook
+  // We trigger an update to ensure the hook runs
+  return await pb.collection('jobs').update<Job>(jobId, {
+    status: 'queued',
+  });
 }
 
 // Get download URL for STL file

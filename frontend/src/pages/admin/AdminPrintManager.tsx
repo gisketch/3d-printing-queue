@@ -23,7 +23,7 @@ import {
 
 } from '../../components/ui';
 import { useJobs } from '../../hooks/useJobs';
-import { startPrinting, completeJob, failJob, getSetting } from '../../services/jobService';
+import { startPrinting, completeJob, failJob, getSetting, recalculateJobPriority } from '../../services/jobService';
 import { formatDuration, formatRelativeTime, getPrintingProgress } from '../../lib/utils';
 import type { Job } from '../../types';
 import {
@@ -36,6 +36,7 @@ import {
   Printer,
   ListOrdered,
   History,
+  RefreshCw,
 
 } from 'lucide-react';
 
@@ -60,8 +61,8 @@ export const AdminPrintManager: React.FC = () => {
   // Helper to calculate total cost for a job
   const calculateJobTotal = (job: Job) => {
     const rawCost = job.price_pesos || 0;
-    const durationMin = job.status === 'completed' && job.actual_duration_min 
-      ? job.actual_duration_min 
+    const durationMin = job.status === 'completed' && job.actual_duration_min
+      ? job.actual_duration_min
       : (job.estimated_duration_min || 0);
     const electricityCost = (durationMin / 60) * electricityRate;
     return Math.round((rawCost + electricityCost) * 100) / 100;
@@ -378,16 +379,32 @@ export const AdminPrintManager: React.FC = () => {
                         ₱{calculateJobTotal(job).toFixed(2)}
                       </GlassTableCell>
                       <GlassTableCell className="text-right">
-                        {index === 0 && !currentJob && (
+                        <div className="flex items-center justify-end gap-2">
                           <GlassButton
                             size="sm"
-                            variant="primary"
-                            onClick={() => handleStartPrint(job)}
+                            variant="ghost"
+                            title="Recalculate Priority"
+                            onClick={async () => {
+                              try {
+                                await recalculateJobPriority(job.id);
+                              } catch (e) {
+                                console.error("Failed to recalculate", e);
+                              }
+                            }}
                           >
-                            <Play className="w-4 h-4 mr-1" />
-                            Start
+                            <RefreshCw className="w-4 h-4" />
                           </GlassButton>
-                        )}
+                          {index === 0 && !currentJob && (
+                            <GlassButton
+                              size="sm"
+                              variant="primary"
+                              onClick={() => handleStartPrint(job)}
+                            >
+                              <Play className="w-4 h-4 mr-1" />
+                              Start
+                            </GlassButton>
+                          )}
+                        </div>
                       </GlassTableCell>
                     </GlassTableRow>
                   ))}
