@@ -23,7 +23,7 @@ import {
 
 } from '../../components/ui';
 import { useJobs } from '../../hooks/useJobs';
-import { startPrinting, completeJob, failJob, getSetting, recalculateJobPriority } from '../../services/jobService';
+import { startPrinting, completeJob, failJob, getSetting, recalculateAllQueuePriorities } from '../../services/jobService';
 import { formatDuration, formatRelativeTime, getPrintingProgress } from '../../lib/utils';
 import type { Job } from '../../types';
 import {
@@ -95,6 +95,18 @@ export const AdminPrintManager: React.FC = () => {
   const [showStartModal, setShowStartModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshQueue = async () => {
+    setIsRefreshing(true);
+    try {
+      await recalculateAllQueuePriorities();
+    } catch (error) {
+      console.error("Failed to refresh queue:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleStartPrint = (job: Job) => {
     setSelectedJob(job);
@@ -339,9 +351,20 @@ export const AdminPrintManager: React.FC = () => {
                 <GlassCardTitle icon={<ListOrdered className="w-5 h-5 text-cyan-400" />}>
                   Print Queue
                 </GlassCardTitle>
-                {queuedJobs.length > 0 && (
-                  <GlassBadge variant="primary">{queuedJobs.length}</GlassBadge>
-                )}
+                <div className="flex items-center gap-2">
+                  <GlassButton
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleRefreshQueue}
+                    disabled={isRefreshing}
+                    title="Recalculate all priorities"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  </GlassButton>
+                  {queuedJobs.length > 0 && (
+                    <GlassBadge variant="primary">{queuedJobs.length}</GlassBadge>
+                  )}
+                </div>
               </div>
             </GlassCardHeader>
             {queuedJobs.length === 0 ? (
@@ -380,20 +403,6 @@ export const AdminPrintManager: React.FC = () => {
                       </GlassTableCell>
                       <GlassTableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <GlassButton
-                            size="sm"
-                            variant="ghost"
-                            title="Recalculate Priority"
-                            onClick={async () => {
-                              try {
-                                await recalculateJobPriority(job.id);
-                              } catch (e) {
-                                console.error("Failed to recalculate", e);
-                              }
-                            }}
-                          >
-                            <RefreshCw className="w-4 h-4" />
-                          </GlassButton>
                           {index === 0 && !currentJob && (
                             <GlassButton
                               size="sm"
@@ -612,7 +621,7 @@ export const AdminPrintManager: React.FC = () => {
           </GlassModalFooter>
         </div>
       </GlassModal>
-    </div>
+    </div >
   );
 };
 

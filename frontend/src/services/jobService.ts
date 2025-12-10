@@ -90,15 +90,21 @@ export async function approveJob(jobId: string, data: JobApprovalFormData): Prom
   // Generate receipt number
   const receiptNumber = generateReceiptNumber();
 
+  // 1. Update job to queued
   // Only store raw cost (price_pesos) - electricity is calculated in frontend
-  return await pb.collection('jobs').update<Job>(jobId, {
+  const result = await pb.collection('jobs').update<Job>(jobId, {
     status: 'queued',
     price_pesos: data.filament_cost, // This is now the raw cost
     receipt_number: receiptNumber,
     estimated_duration_min: estimatedMinutes,
     admin_notes: data.admin_notes,
-    // Priority score will be calculated by PocketBase hooks
+    // Priority score will be calculated by frontend service below
   });
+
+  // 2. Trigger global priority recalculation
+  await recalculateAllQueuePriorities();
+
+  return result;
 }
 
 // Admin: Reject a job
@@ -167,14 +173,63 @@ export async function failJob(jobId: string, notes?: string): Promise<Job> {
   return await pb.collection('jobs').update<Job>(jobId, updateData);
 }
 
-// Admin: Recalculate priority manually
-export async function recalculateJobPriority(jobId: string): Promise<Job> {
-  // Re-saving with 'queued' status triggers the pb hook
-  // We trigger an update to ensure the hook runs
-  return await pb.collection('jobs').update<Job>(jobId, {
-    status: 'queued',
-  });
+
+
+// Calculate priority score (Pure logic)
+function calculatePriorityScore(totalPrintTimeHours: number, estimatedDurationMins: number): number {
+  // 1. Karma Score
+  // Formula: Higher usage = Lower score
+  // Adding +1 to avoid division by zero
+  let score = 100 / (totalPrintTimeHours + 1);
+
+  // 2. Gap Filler Logic
+  // Small jobs (< 45 minutes) get a priority boost
+  if (estimatedDurationMins > 0 && estimatedDurationMins < 45) {
+    score = score + 50;
+  }
+
+  return Math.round(score * 100) / 100;
 }
+
+// Global: Recalculate priority for ALL queued jobs
+// This mimics the previous hook logic but runs in the frontend for all jobs at once
+export async function recalculateAllQueuePriorities(): Promise<void> {
+  try {
+    // 1. Fetch all queued jobs (expanded with user to get total_print_time)
+    const queuedJobs = await pb.collection('jobs').getFullList<Job>({
+      filter: 'status = "queued"',
+      expand: 'user',
+    });
+
+    console.log(`[Frontend Priority] Recalculating for ${queuedJobs.length} jobs...`);
+
+    // 2. Update each job
+    // We execute these in parallel for speed
+    const updatePromises = queuedJobs.map(async (job) => {
+      const user = job.expand?.user;
+      if (!user) return;
+
+      const totalPrintTime = user.total_print_time || 0;
+      const estimatedDuration = job.estimated_duration_min || 0;
+      const newScore = calculatePriorityScore(totalPrintTime, estimatedDuration);
+
+      // Only update if score changed
+      if (job.priority_score !== newScore) {
+        await pb.collection('jobs').update(job.id, {
+          priority_score: newScore,
+        });
+        console.log(`[Frontend Priority] Job ${job.project_name}: ${job.priority_score} -> ${newScore}`);
+      }
+    });
+
+    await Promise.all(updatePromises);
+    console.log(`[Frontend Priority] Recalculation complete.`);
+  } catch (err) {
+    console.error("[Frontend Priority] Failed to recalculate queue:", err);
+    throw err;
+  }
+}
+
 
 // Get download URL for STL file
 export function getSTLFileUrl(job: Job): string | null {
