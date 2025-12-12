@@ -106,9 +106,27 @@ export const AdminJobReview: React.FC = () => {
       }, isPaid);
       setShowApproveModal(false);
       setSelectedJob(null);
-    } catch (err) {
-      setApproveError('Failed to approve job');
-      console.error(err);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const pocketbaseError = (err as { response?: { message?: string; data?: Record<string, { message: string }> } })?.response;
+      console.error('Approve job error:', {
+        error: err,
+        message: errorMessage,
+        pocketbaseResponse: pocketbaseError,
+      });
+      
+      // Try to extract more specific error message from PocketBase
+      let displayError = 'Failed to approve job';
+      if (pocketbaseError?.data) {
+        const fieldErrors = Object.entries(pocketbaseError.data)
+          .map(([field, error]) => `${field}: ${error.message}`)
+          .join(', ');
+        if (fieldErrors) displayError = fieldErrors;
+      } else if (pocketbaseError?.message) {
+        displayError = pocketbaseError.message;
+      }
+      
+      setApproveError(displayError);
     } finally {
       setIsApproving(false);
     }

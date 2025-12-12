@@ -90,20 +90,29 @@ export async function approveJob(jobId: string, data: JobApprovalFormData, isPai
   // Generate receipt number
   const receiptNumber = generateReceiptNumber();
 
-  // 1. Update job to queued
-  // Only store raw cost (price_pesos) - electricity is calculated in frontend
-  const result = await pb.collection('jobs').update<Job>(jobId, {
+  // 1. Build update payload - only include defined values
+  const updatePayload: Record<string, unknown> = {
     status: 'queued',
-    price_pesos: data.filament_cost, // This is now the raw cost
+    price_pesos: data.filament_cost,
     receipt_number: receiptNumber,
     estimated_duration_min: estimatedMinutes,
-    admin_notes: data.admin_notes,
     is_paid: isPaid,
-    // Priority score will be calculated by frontend service below
-  });
+  };
 
-  // 2. Trigger global priority recalculation
-  await recalculateAllQueuePriorities();
+  // Only include admin_notes if it has a value
+  if (data.admin_notes) {
+    updatePayload.admin_notes = data.admin_notes;
+  }
+
+  // 2. Update job to queued
+  const result = await pb.collection('jobs').update<Job>(jobId, updatePayload);
+
+  // 3. Trigger global priority recalculation (don't fail if this errors)
+  try {
+    await recalculateAllQueuePriorities();
+  } catch (priorityErr) {
+    console.error('[ApproveJob] Priority recalculation failed (non-fatal):', priorityErr);
+  }
 
   return result;
 }
@@ -120,6 +129,7 @@ export async function rejectJob(jobId: string, notes?: string): Promise<Job> {
 export async function startPrinting(jobId: string): Promise<Job> {
   return await pb.collection('jobs').update<Job>(jobId, {
     status: 'printing',
+    started_on: new Date().toISOString(), // Set timestamp when print starts
   });
 }
 

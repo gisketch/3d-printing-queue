@@ -212,14 +212,14 @@ export const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 </span>
               </div>
 
-              {job.approved_on && (
+              {job.started_on && (
                 <div className="flex items-center justify-between">
                   <span className="text-white/60 flex items-center gap-2 text-sm">
                     <CheckCircle className="w-4 h-4" />
-                    Approved
+                    Print Started
                   </span>
                   <span className="text-white font-medium text-xs">
-                    {formatDate(job.approved_on)}
+                    {formatDate(job.started_on)}
                   </span>
                 </div>
               )}

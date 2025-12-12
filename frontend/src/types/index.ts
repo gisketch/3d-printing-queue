@@ -40,8 +40,9 @@ export interface Job extends RecordModel {
   actual_duration_min?: number;
   priority_score: number;
   is_paid?: boolean; // Payment status
-  approved_on?: string; // Timestamp when job was approved (used for print progress)
+  started_on?: string; // Timestamp when print started (used for print progress)
   completed_on?: string; // Timestamp when job was completed (used for reports)
+  electricity_rate?: number; // Electricity rate at time of approval
   user: string; // Relation to users
   expand?: {
     user?: User;

@@ -79,7 +79,7 @@ export const UserDashboard: React.FC = () => {
 
   const currentPrintingJob = printingJobs[0] || null;
   const currentPrintingProgress = currentPrintingJob
-    ? getPrintingProgress(currentPrintingJob.estimated_duration_min, currentPrintingJob.approved_on, nowMs)
+    ? getPrintingProgress(currentPrintingJob.estimated_duration_min, currentPrintingJob.started_on, nowMs)
     : null;
   const printingTimeLeft = currentPrintingProgress?.remainingMinutes || 0;
   

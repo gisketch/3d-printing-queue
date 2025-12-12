@@ -80,7 +80,7 @@ export const AdminPrintManager: React.FC = () => {
 
   const currentJob = printingJobs[0] || null;
   const currentProgress = currentJob
-    ? getPrintingProgress(currentJob.estimated_duration_min, currentJob.approved_on, nowMs)
+    ? getPrintingProgress(currentJob.estimated_duration_min, currentJob.started_on, nowMs)
     : null;
   const nextJob = queuedJobs[0] || null;
   const recentCompleted = completedJobs.slice(0, 5);

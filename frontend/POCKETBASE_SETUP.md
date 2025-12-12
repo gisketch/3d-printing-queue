@@ -36,10 +36,14 @@ Create a new collection called `jobs` with these fields:
 | `stl_link` | URL | - |
 | `status` | Select | Values: `pending_review`, `queued`, `printing`, `completed`, `rejected`, `failed`. Required |
 | `admin_notes` | Text | Max: 1000 |
-| `price_pesos` | Number | Min: 0 |
+| `price_pesos` | Number | Min: 0 (stores raw filament cost) |
+| `receipt_number` | Text | Auto-generated receipt ID (format: 3DNTZ-YYYYMMDD-XXXX) |
+| `is_paid` | Boolean | Default: false |
 | `estimated_duration_min` | Number | Min: 0 |
 | `actual_duration_min` | Number | Min: 0 |
 | `priority_score` | Number | Default: 0 |
+| `started_on` | DateTime | Timestamp when print started |
+| `completed_on` | DateTime | Timestamp when job completed |
 | `user` | Relation | Collection: users, Required |
 
 ### Collection: `user_requests`
