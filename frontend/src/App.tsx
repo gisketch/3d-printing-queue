@@ -69,7 +69,7 @@ function App() {
           <Route
             path="/admin/reports"
             element={
-              <ProtectedRoute requireAdmin>
+              <ProtectedRoute requireAdmin requireFinance>
                 <AdminReports />
               </ProtectedRoute>
             }

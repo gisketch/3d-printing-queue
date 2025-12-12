@@ -149,6 +149,7 @@ export async function completeJob(
     status: 'completed',
     actual_duration_min: actualMinutes,
     is_paid: isPaid,
+    completed_on: new Date().toISOString(),
   };
 
   // Remove the STL file if it exists
@@ -167,6 +168,11 @@ export async function failJob(jobId: string, notes?: string): Promise<Job> {
   const updateData: Record<string, unknown> = {
     status: 'failed',
     admin_notes: notes,
+    // Set duration and cost to 0 for failed jobs
+    estimated_duration_min: 0,
+    actual_duration_min: 0,
+    price_pesos: 0,
+    is_paid: false,
   };
 
   if (job.stl_file) {

@@ -21,6 +21,7 @@ export interface User extends RecordModel {
   role: UserRole;
   total_print_time: number; // in hours
   must_change_password: boolean;
+  is_finance?: boolean; // Can access reports page
 }
 
 // Job record type
@@ -40,6 +41,7 @@ export interface Job extends RecordModel {
   priority_score: number;
   is_paid?: boolean; // Payment status
   approved_on?: string; // Timestamp when job was approved (used for print progress)
+  completed_on?: string; // Timestamp when job was completed (used for reports)
   user: string; // Relation to users
   expand?: {
     user?: User;

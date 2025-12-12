@@ -176,6 +176,7 @@ export interface SidebarNavLinkProps {
   to: string;
   children: React.ReactNode;
   icon?: React.ReactNode;
+  badge?: number;
   className?: string;
 }
 
@@ -183,6 +184,7 @@ export const GlassSidebarNavLink: React.FC<SidebarNavLinkProps> = ({
   to,
   children,
   icon,
+  badge,
   className = '',
 }) => (
   <NavLink to={to} className="block">
@@ -208,7 +210,10 @@ export const GlassSidebarNavLink: React.FC<SidebarNavLinkProps> = ({
             {icon}
           </span>
         )}
-        {children}
+        <span className="flex-1">{children}</span>
+        {badge !== undefined && badge > 0 && (
+          <span className="sidebar-badge">{badge}</span>
+        )}
       </motion.div>
     )}
   </NavLink>

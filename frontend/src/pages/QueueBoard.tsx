@@ -17,15 +17,27 @@ import {
   GlassProgress,
   GlassAvatar,
   GlassSeparator,
-
+  GlassButton,
 } from '../components/ui';
+import { JobDetailsModal } from '../components/JobDetailsModal';
 import { useJobs } from '../hooks/useJobs';
 import { formatDuration, formatRelativeTime, getPrintingProgress } from '../lib/utils';
+import pb from '../lib/pocketbase';
+import type { Job } from '../types';
 
-import { Printer, Clock, Users, Loader2, CheckCircle2, History, Zap, TrendingUp } from 'lucide-react';
+import { Printer, Clock, Users, Loader2, CheckCircle2, History, Zap, TrendingUp, Download, ExternalLink } from 'lucide-react';
 
 export const QueueBoard: React.FC = () => {
   const [nowMs, setNowMs] = useState(Date.now());
+
+  // Job details modal state
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
+
+  const handleViewJobDetails = (job: Job) => {
+    setSelectedJob(job);
+    setShowJobDetailsModal(true);
+  };
 
   useEffect(() => {
     const id = setInterval(() => setNowMs(Date.now()), 5000);
@@ -200,8 +212,8 @@ export const QueueBoard: React.FC = () => {
       </div>
 
       {/* Up Next Queue */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <GlassCard delay={0.35} className="lg:col-span-1">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+        <GlassCard delay={0.35} className="lg:col-span-1 h-full">
           <GlassCardHeader>
             <GlassCardTitle icon={<Zap className="w-5 h-5 text-amber-400" />}>
               Up Next
@@ -220,11 +232,12 @@ export const QueueBoard: React.FC = () => {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4 + index * 0.1 }}
-                    className={`p-3 rounded-xl ${
+                    className={`p-3 rounded-xl cursor-pointer transition-colors ${
                       index === 0 
-                        ? 'glass-alert-warning' 
-                        : 'glass-sub-card'
+                        ? 'glass-alert-warning hover:bg-amber-500/20' 
+                        : 'glass-sub-card hover:bg-white/[0.04]'
                     }`}
+                    onClick={() => handleViewJobDetails(job)}
                   >
                     <div className="flex items-center gap-3">
                       <span className={`text-lg font-bold ${
@@ -241,6 +254,30 @@ export const QueueBoard: React.FC = () => {
                           {formatDuration(job.estimated_duration_min || 0)}
                         </p>
                       </div>
+                      {/* Download button if file available, else link button if link provided */}
+                      {job.stl_file ? (
+                        <GlassButton
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const url = pb.files.getURL(job, job.stl_file!);
+                            window.open(url, '_blank');
+                          }}
+                          title="Download file"
+                        >
+                          <Download className="w-4 h-4" />
+                        </GlassButton>
+                      ) : job.stl_link ? (
+                        <GlassButton
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => { e.stopPropagation(); window.open(job.stl_link, '_blank'); }}
+                          title="Open link"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </GlassButton>
+                      ) : null}
                     </div>
                   </motion.div>
                 ))}
@@ -255,7 +292,7 @@ export const QueueBoard: React.FC = () => {
         </GlassCard>
 
         {/* Full Queue Table */}
-        <GlassCard delay={0.4} className="lg:col-span-2">
+        <GlassCard delay={0.4} className="lg:col-span-2 h-full">
           <GlassCardHeader>
             <div className="flex items-center justify-between">
               <GlassCardTitle icon={<Users className="w-5 h-5 text-cyan-400" />}>
@@ -286,7 +323,7 @@ export const QueueBoard: React.FC = () => {
                   />
                 ) : (
                   queuedJobs.map((job, index) => (
-                    <GlassTableRow key={job.id} delay={index * 0.03}>
+                    <GlassTableRow key={job.id} delay={index * 0.03} onClick={() => handleViewJobDetails(job)}>
                       <GlassTableCell className="font-bold text-white/40">
                         {index + 1}
                       </GlassTableCell>
@@ -340,7 +377,7 @@ export const QueueBoard: React.FC = () => {
                 />
               ) : (
                 recentCompleted.map((job, index) => (
-                  <GlassTableRow key={job.id} delay={index * 0.03}>
+                  <GlassTableRow key={job.id} delay={index * 0.03} onClick={() => handleViewJobDetails(job)}>
                     <GlassTableCell>
                       <div className="flex items-center gap-3">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -363,6 +400,16 @@ export const QueueBoard: React.FC = () => {
           </GlassTable>
         </GlassCardContent>
       </GlassCard>
+
+      {/* Job Details Modal */}
+      <JobDetailsModal
+        job={selectedJob}
+        isOpen={showJobDetailsModal}
+        onClose={() => {
+          setShowJobDetailsModal(false);
+          setSelectedJob(null);
+        }}
+      />
     </div>
   );
 };

@@ -7,6 +7,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isFinance: boolean;
   mustChangePassword: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
+    isFinance: user?.role === 'admin' && user?.is_finance === true,
     mustChangePassword: user?.must_change_password ?? false,
     login,
     logout,

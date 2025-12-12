@@ -22,6 +22,7 @@ import {
   GlassProgress,
 
 } from '../../components/ui';
+import { JobDetailsModal } from '../../components/JobDetailsModal';
 import { useJobs } from '../../hooks/useJobs';
 import { startPrinting, completeJob, failJob, getSetting, recalculateAllQueuePriorities, togglePaid } from '../../services/jobService';
 import { formatDuration, formatRelativeTime, getPrintingProgress } from '../../lib/utils';
@@ -60,6 +61,10 @@ export const AdminPrintManager: React.FC = () => {
 
   // Helper to calculate total cost for a job
   const calculateJobTotal = (job: Job) => {
+    // Failed and rejected jobs should have 0 cost
+    if (job.status === 'failed' || job.status === 'rejected') {
+      return 0;
+    }
     const rawCost = job.price_pesos || 0;
     const durationMin = job.status === 'completed' && job.actual_duration_min
       ? job.actual_duration_min
@@ -105,6 +110,15 @@ export const AdminPrintManager: React.FC = () => {
 
   // Local state for optimistic paid status updates
   const [localPaidStatus, setLocalPaidStatus] = useState<Record<string, boolean>>({});
+
+  // Job Details Modal
+  const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
+  const [selectedDetailsJob, setSelectedDetailsJob] = useState<Job | null>(null);
+
+  const handleViewJobDetails = (job: Job) => {
+    setSelectedDetailsJob(job);
+    setShowJobDetailsModal(true);
+  };
 
   // Handle opening paid modal
   const handleOpenPaidModal = (job: Job) => {
@@ -252,12 +266,12 @@ export const AdminPrintManager: React.FC = () => {
       ) : (
         <>
           {/* Main Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
             {/* Currently Printing - Takes 2 columns */}
             <GlassCard
               delay={0.1}
               variant={currentJob ? 'glow' : 'default'}
-              className="lg:col-span-2"
+              className="lg:col-span-2 h-full"
             >
               <GlassCardHeader>
                 <div className="flex items-center justify-between">
@@ -344,7 +358,7 @@ export const AdminPrintManager: React.FC = () => {
             </GlassCard>
 
             {/* Queue Stats Card */}
-            <GlassCard delay={0.2}>
+            <GlassCard delay={0.2} className="h-full">
               <GlassCardHeader>
                 <GlassCardTitle icon={<ListOrdered className="w-5 h-5 text-purple-400" />}>
                   Queue Stats
@@ -430,7 +444,7 @@ export const AdminPrintManager: React.FC = () => {
                 </GlassTableHeader>
                 <GlassTableBody>
                   {queuedJobs.map((job, index) => (
-                    <GlassTableRow key={job.id} delay={index * 0.05}>
+                    <GlassTableRow key={job.id} delay={index * 0.05} onClick={() => handleViewJobDetails(job)}>
                       <GlassTableCell className="font-bold text-white/40">
                         {index + 1}
                       </GlassTableCell>
@@ -449,13 +463,13 @@ export const AdminPrintManager: React.FC = () => {
                       <GlassTableCell>
                         <span
                           className={`pill-clickable ${getIsPaid(job) ? 'pill-paid' : 'pill-unpaid'}`}
-                          onClick={() => handleOpenPaidModal(job)}
+                          onClick={(e) => { e.stopPropagation(); handleOpenPaidModal(job); }}
                         >
                           {getIsPaid(job) ? 'Paid' : 'Unpaid'}
                         </span>
                       </GlassTableCell>
                       <GlassTableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                           {index === 0 && !currentJob && (
                             <GlassButton
                               size="sm"
@@ -499,7 +513,7 @@ export const AdminPrintManager: React.FC = () => {
                 </GlassTableHeader>
                 <GlassTableBody>
                   {recentCompleted.map((job, index) => (
-                    <GlassTableRow key={job.id} delay={index * 0.05}>
+                    <GlassTableRow key={job.id} delay={index * 0.05} onClick={() => handleViewJobDetails(job)}>
                       <GlassTableCell className="font-medium text-white">
                         {job.project_name}
                       </GlassTableCell>
@@ -512,7 +526,7 @@ export const AdminPrintManager: React.FC = () => {
                       <GlassTableCell>
                         <span
                           className={`pill-clickable ${getIsPaid(job) ? 'pill-paid' : 'pill-unpaid'}`}
-                          onClick={() => handleOpenPaidModal(job)}
+                          onClick={(e) => { e.stopPropagation(); handleOpenPaidModal(job); }}
                         >
                           {getIsPaid(job) ? 'Paid' : 'Unpaid'}
                         </span>
@@ -746,6 +760,16 @@ export const AdminPrintManager: React.FC = () => {
           </GlassModalFooter>
         </div>
       </GlassModal>
+
+      {/* Job Details Modal */}
+      <JobDetailsModal
+        job={selectedDetailsJob}
+        isOpen={showJobDetailsModal}
+        onClose={() => {
+          setShowJobDetailsModal(false);
+          setSelectedDetailsJob(null);
+        }}
+      />
     </div >
   );
 };

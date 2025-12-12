@@ -22,6 +22,7 @@ import {
   StatCard,
 } from '../../components/ui';
 import { Receipt } from '../../components/Receipt';
+import { JobDetailsModal } from '../../components/JobDetailsModal';
 import { useJobs } from '../../hooks/useJobs';
 import { getAllSettings, updateSetting, togglePaid } from '../../services/jobService';
 import { formatRelativeTime } from '../../lib/utils';
@@ -50,18 +51,18 @@ const getWeekRange = (date: Date) => {
   const day = start.getDay();
   start.setDate(start.getDate() - day);
   start.setHours(0, 0, 0, 0);
-  
+
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
   end.setHours(23, 59, 59, 999);
-  
+
   return { start, end };
 };
 
 export const AdminReports: React.FC = () => {
   // Fetch all jobs
   const { jobs: allJobs, isLoading: loadingJobs } = useJobs({});
-  
+
   // State
   const [activeTab, setActiveTab] = useState<string>('daily');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -69,7 +70,7 @@ export const AdminReports: React.FC = () => {
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  
+
   // Settings state
   const [electricityRate, setElectricityRate] = useState('7.5');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -82,6 +83,15 @@ export const AdminReports: React.FC = () => {
   const [paidModalJob, setPaidModalJob] = useState<Job | null>(null);
   const [isUpdatingPaid, setIsUpdatingPaid] = useState(false);
 
+  // Job Details Modal
+  const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
+  const [selectedDetailsJob, setSelectedDetailsJob] = useState<Job | null>(null);
+
+  const handleViewJobDetails = (job: Job) => {
+    setSelectedDetailsJob(job);
+    setShowJobDetailsModal(true);
+  };
+
   // Handle opening paid modal
   const handleOpenPaidModal = (job: Job) => {
     setPaidModalJob(job);
@@ -91,7 +101,7 @@ export const AdminReports: React.FC = () => {
   // Handle paid status change from modal
   const handleConfirmPaidChange = async (newPaidStatus: boolean) => {
     if (!paidModalJob) return;
-    
+
     setIsUpdatingPaid(true);
     setLocalPaidStatus(prev => ({ ...prev, [paidModalJob.id]: newPaidStatus }));
     try {
@@ -126,12 +136,15 @@ export const AdminReports: React.FC = () => {
   }, []);
 
   // Filter jobs by date range
+  // New logic:
+  // - Queued/pending_review/printing jobs always show in CURRENT day only
+  // - Completed jobs use completed_on timestamp for filtering
   const filteredJobs = useMemo(() => {
     if (!allJobs.length) return [];
-    
+
     let start: Date;
     let end: Date;
-    
+
     if (activeTab === 'daily') {
       start = new Date(selectedDate);
       start.setHours(0, 0, 0, 0);
@@ -151,8 +164,27 @@ export const AdminReports: React.FC = () => {
       end.setDate(0);
       end.setHours(23, 59, 59, 999);
     }
-    
+
+    // Check if selected date range includes today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+    const isCurrentPeriod = start <= todayEnd && end >= today;
+
     return allJobs.filter(job => {
+      // For queued, pending_review, and printing - only show if viewing current period
+      if (job.status === 'queued' || job.status === 'pending_review' || job.status === 'printing') {
+        return isCurrentPeriod;
+      }
+
+      // For completed jobs - use completed_on timestamp
+      if (job.status === 'completed') {
+        const completedDate = job.completed_on ? new Date(job.completed_on) : new Date(job.updated);
+        return completedDate >= start && completedDate <= end;
+      }
+
+      // For rejected/failed - use created date
       const jobDate = new Date(job.created);
       return jobDate >= start && jobDate <= end;
     });
@@ -161,43 +193,43 @@ export const AdminReports: React.FC = () => {
   // Calculate revenue stats (with frontend electricity calculation)
   const revenueStats = useMemo(() => {
     const rate = parseFloat(electricityRate) || 7.5;
-    
+
     const calculateTotal = (job: Job) => {
       const rawCost = job.price_pesos || 0;
-      const durationMin = job.status === 'completed' && job.actual_duration_min 
-        ? job.actual_duration_min 
+      const durationMin = job.status === 'completed' && job.actual_duration_min
+        ? job.actual_duration_min
         : (job.estimated_duration_min || 0);
       const electricityCost = (durationMin / 60) * rate;
       return rawCost + electricityCost;
     };
-    
+
     const completed = filteredJobs.filter(j => j.status === 'completed');
     const printing = filteredJobs.filter(j => j.status === 'printing');
     const queued = filteredJobs.filter(j => j.status === 'queued');
-    
+
     // Calculate unpaid total (all non-pending jobs that are not paid)
-    const unpaidJobs = filteredJobs.filter(j => 
-      j.status !== 'pending_review' && 
-      j.status !== 'rejected' && 
+    const unpaidJobs = filteredJobs.filter(j =>
+      j.status !== 'pending_review' &&
+      j.status !== 'rejected' &&
       !getIsPaid(j)
     );
     const unpaidTotal = unpaidJobs.reduce((acc, j) => acc + calculateTotal(j), 0);
-    
+
     const completedRevenue = completed.reduce((acc, j) => acc + calculateTotal(j), 0);
     const printingRevenue = printing.reduce((acc, j) => acc + calculateTotal(j), 0);
     const queuedRevenue = queued.reduce((acc, j) => acc + calculateTotal(j), 0);
-    
+
     // Calculate paid vs unpaid for completed
     const completedPaid = completed.filter(j => getIsPaid(j)).reduce((acc, j) => acc + calculateTotal(j), 0);
     const completedUnpaid = completedRevenue - completedPaid;
-    
+
     // Calculate paid vs unpaid for printing
     const printingPaid = printing.filter(j => getIsPaid(j)).reduce((acc, j) => acc + calculateTotal(j), 0);
     const printingUnpaid = printingRevenue - printingPaid;
-    
+
     // Calculate total unpaid
     const totalUnpaid = completedUnpaid + printingUnpaid;
-    
+
     return {
       completed: completedRevenue,
       completedUnpaid,
@@ -212,9 +244,23 @@ export const AdminReports: React.FC = () => {
     };
   }, [filteredJobs, electricityRate, localPaidStatus]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
-  const paginatedJobs = filteredJobs.slice(
+  // Pagination - sort first by status priority, then paginate
+  // Status order: completed -> printing -> queued -> pending_review -> failed -> rejected
+  const statusOrder: Record<string, number> = {
+    'completed': 1,
+    'printing': 2,
+    'queued': 3,
+    'pending_review': 4,
+    'failed': 5,
+    'rejected': 6,
+  };
+
+  const sortedJobs = [...filteredJobs].sort((a, b) => {
+    return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+  });
+
+  const totalPages = Math.ceil(sortedJobs.length / ITEMS_PER_PAGE);
+  const paginatedJobs = sortedJobs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -262,7 +308,7 @@ export const AdminReports: React.FC = () => {
   const handlePrintReport = () => {
     const rate = parseFloat(electricityRate) || 7.5;
     const reportTitle = activeTab === 'daily' ? 'Daily Report' : activeTab === 'weekly' ? 'Weekly Report' : 'Monthly Report';
-    
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
@@ -289,7 +335,7 @@ export const AdminReports: React.FC = () => {
           <title>${reportTitle} - ${formatDateLabel()}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { 
+            body {
               font-family: 'Segoe UI', system-ui, sans-serif;
               padding: 40px;
               max-width: 900px;
@@ -393,7 +439,7 @@ export const AdminReports: React.FC = () => {
             <h1>🖨️ Netzon 3D Print - ${reportTitle}</h1>
             <div class="date">${formatDateLabel()}</div>
           </div>
-          
+
           <div class="stats">
             <div class="stat-box">
               <div class="label">Total Revenue</div>
@@ -468,10 +514,14 @@ export const AdminReports: React.FC = () => {
 
   // Helper to calculate total cost for a job
   const calculateJobTotal = (job: Job) => {
+    // Failed and rejected jobs should have 0 cost
+    if (job.status === 'failed' || job.status === 'rejected') {
+      return 0;
+    }
     const rate = parseFloat(electricityRate) || 7.5;
     const rawCost = job.price_pesos || 0;
-    const durationMin = job.status === 'completed' && job.actual_duration_min 
-      ? job.actual_duration_min 
+    const durationMin = job.status === 'completed' && job.actual_duration_min
+      ? job.actual_duration_min
       : (job.estimated_duration_min || 0);
     const electricityCost = (durationMin / 60) * rate;
     return Math.round((rawCost + electricityCost) * 100) / 100;
@@ -525,7 +575,7 @@ export const AdminReports: React.FC = () => {
               />
             ) : (
               paginatedJobs.map((job, index) => (
-                <GlassTableRow key={job.id} delay={index * 0.03}>
+                <GlassTableRow key={job.id} delay={index * 0.03} onClick={() => handleViewJobDetails(job)}>
                   <GlassTableCell>
                     <span className="font-mono text-xs text-cyan-400">
                       {job.receipt_number || job.id.slice(0, 10)}
@@ -556,32 +606,34 @@ export const AdminReports: React.FC = () => {
                     </span>
                   </GlassTableCell>
                   <GlassTableCell>
-                    {job.status !== 'pending_review' && job.status !== 'rejected' && (
+                    {job.status !== 'pending_review' && job.status !== 'rejected' && job.status !== 'failed' && (
                       <span
                         className={`pill-clickable ${getIsPaid(job) ? 'pill-paid' : 'pill-unpaid'}`}
-                        onClick={() => handleOpenPaidModal(job)}
+                        onClick={(e) => { e.stopPropagation(); handleOpenPaidModal(job); }}
                       >
                         {getIsPaid(job) ? 'Paid' : 'Unpaid'}
                       </span>
                     )}
                   </GlassTableCell>
                   <GlassTableCell className="text-white/60">
-                    {showDateColumn 
+                    {showDateColumn
                       ? new Date(job.created).toLocaleDateString()
                       : formatRelativeTime(job.created)
                     }
                   </GlassTableCell>
                   <GlassTableCell className="text-right">
-                    {job.status !== 'pending_review' && job.status !== 'rejected' && (
-                      <GlassButton
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleViewReceipt(job)}
-                      >
-                        <ReceiptIcon className="w-4 h-4 mr-1" />
-                        View
-                      </GlassButton>
-                    )}
+                    <div onClick={(e) => e.stopPropagation()}>
+                      {job.status !== 'pending_review' && job.status !== 'rejected' && (
+                        <GlassButton
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewReceipt(job)}
+                        >
+                          <ReceiptIcon className="w-4 h-4 mr-1" />
+                          View
+                        </GlassButton>
+                      )}
+                    </div>
                   </GlassTableCell>
                 </GlassTableRow>
               ))
@@ -831,13 +883,23 @@ export const AdminReports: React.FC = () => {
               onClick={() => handleConfirmPaidChange(!(paidModalJob && getIsPaid(paidModalJob)))}
               disabled={isUpdatingPaid}
             >
-              {isUpdatingPaid 
-                ? 'Updating...' 
+              {isUpdatingPaid
+                ? 'Updating...'
                 : (paidModalJob && getIsPaid(paidModalJob) ? 'Mark Unpaid' : 'Mark Paid')}
             </GlassButton>
           </GlassModalFooter>
         </div>
       </GlassModal>
+
+      {/* Job Details Modal */}
+      <JobDetailsModal
+        job={selectedDetailsJob}
+        isOpen={showJobDetailsModal}
+        onClose={() => {
+          setShowJobDetailsModal(false);
+          setSelectedDetailsJob(null);
+        }}
+      />
     </div>
   );
 };

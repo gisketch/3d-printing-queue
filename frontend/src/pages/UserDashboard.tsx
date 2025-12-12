@@ -27,6 +27,7 @@ import {
   GlassTabs,
 } from '../components/ui';
 import { Receipt } from '../components/Receipt';
+import { JobDetailsModal } from '../components/JobDetailsModal';
 import { useAuth } from '../context/AuthContext';
 import { useHasActiveJob, useJobs } from '../hooks/useJobs';
 import { createJob, getSetting } from '../services/jobService';
@@ -47,6 +48,7 @@ import {
   Receipt as ReceiptIcon,
   FileText,
   Wallet,
+  MessageSquare,
 } from 'lucide-react';
 
 export const UserDashboard: React.FC = () => {
@@ -77,11 +79,27 @@ export const UserDashboard: React.FC = () => {
 
   const currentPrintingJob = printingJobs[0] || null;
   const currentPrintingProgress = currentPrintingJob
-    ? getPrintingProgress(currentPrintingJob.estimated_duration_min, currentPrintingJob.updated, nowMs)
+    ? getPrintingProgress(currentPrintingJob.estimated_duration_min, currentPrintingJob.approved_on, nowMs)
     : null;
-  const queuedTime = queuedJobs.reduce((acc, job) => acc + (job.estimated_duration_min || 0), 0);
   const printingTimeLeft = currentPrintingProgress?.remainingMinutes || 0;
-  const totalQueueTime = queuedTime + printingTimeLeft;
+  
+  // Calculate personalized wait time
+  // If user has a job in queue, calculate wait time until their job starts
+  // Otherwise, show total queue time
+  const userQueuedJob = queuedJobs.find(j => j.user === user?.id);
+  let userWaitTime = 0;
+  
+  if (userQueuedJob) {
+    // Find user's position in queue and sum up times of jobs before them
+    const userPosition = queuedJobs.findIndex(j => j.id === userQueuedJob.id);
+    const jobsBeforeUser = queuedJobs.slice(0, userPosition);
+    const timeBeforeUser = jobsBeforeUser.reduce((acc, job) => acc + (job.estimated_duration_min || 0), 0);
+    userWaitTime = printingTimeLeft + timeBeforeUser;
+  } else {
+    // No job in queue - show total queue time
+    const totalQueuedTime = queuedJobs.reduce((acc, job) => acc + (job.estimated_duration_min || 0), 0);
+    userWaitTime = printingTimeLeft + totalQueuedTime;
+  }
 
   // New Job Modal
   const [showNewJobModal, setShowNewJobModal] = useState(false);
@@ -99,9 +117,27 @@ export const UserDashboard: React.FC = () => {
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedReceiptJob, setSelectedReceiptJob] = useState<Job | null>(null);
 
+  // Admin notes modal state
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [selectedNotesJob, setSelectedNotesJob] = useState<Job | null>(null);
+
+  // Job details modal state
+  const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
+  const [selectedDetailsJob, setSelectedDetailsJob] = useState<Job | null>(null);
+
   const handleViewReceipt = (job: Job) => {
     setSelectedReceiptJob(job);
     setShowReceiptModal(true);
+  };
+
+  const handleViewNotes = (job: Job) => {
+    setSelectedNotesJob(job);
+    setShowNotesModal(true);
+  };
+
+  const handleViewJobDetails = (job: Job) => {
+    setSelectedDetailsJob(job);
+    setShowJobDetailsModal(true);
   };
 
   const handleSubmitJob = async (e: React.FormEvent) => {
@@ -152,6 +188,10 @@ export const UserDashboard: React.FC = () => {
 
   // Helper to calculate total cost for a job
   const calculateJobTotal = (job: Job) => {
+    // Failed and rejected jobs should have 0 cost
+    if (job.status === 'failed' || job.status === 'rejected') {
+      return 0;
+    }
     const rawCost = job.price_pesos || 0;
     const durationMin = job.status === 'completed' && job.actual_duration_min 
       ? job.actual_duration_min 
@@ -224,8 +264,8 @@ export const UserDashboard: React.FC = () => {
           delay={0.15}
         />
         <StatCard
-          label="Wait Time"
-          value={totalQueueTime > 0 ? `${Math.ceil(totalQueueTime / 60)}h` : '-'}
+          label={userQueuedJob ? "Your Wait" : "Wait Time"}
+          value={userWaitTime > 0 ? `${Math.ceil(userWaitTime / 60)}h` : '-'}
           icon={<Clock className="w-5 h-5" />}
           variant="warning"
           delay={0.2}
@@ -390,10 +430,10 @@ export const UserDashboard: React.FC = () => {
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Clock className="w-4 h-4 text-amber-400" />
                   <span className="text-2xl font-bold text-white">
-                    {totalQueueTime > 0 ? Math.ceil(totalQueueTime / 60) : 0}
+                    {userWaitTime > 0 ? Math.ceil(userWaitTime / 60) : 0}
                   </span>
                 </div>
-                <p className="text-xs text-white/50">Hours Wait</p>
+                <p className="text-xs text-white/50">{userQueuedJob ? 'Your Wait' : 'Hours Wait'}</p>
               </div>
             </div>
           </GlassCardContent>
@@ -464,12 +504,12 @@ export const UserDashboard: React.FC = () => {
                         <GlassTableHead>Duration</GlassTableHead>
                         <GlassTableHead>Price</GlassTableHead>
                         <GlassTableHead>Submitted</GlassTableHead>
-                        <GlassTableHead className="text-right">Receipt</GlassTableHead>
+                        <GlassTableHead className="text-right">Actions</GlassTableHead>
                       </tr>
                     </GlassTableHeader>
                     <GlassTableBody>
                       {activeJobs.map((job, index) => (
-                        <GlassTableRow key={job.id} delay={index * 0.05}>
+                        <GlassTableRow key={job.id} delay={index * 0.05} onClick={() => handleViewJobDetails(job)}>
                           <GlassTableCell className="font-medium text-white">
                             {job.project_name}
                           </GlassTableCell>
@@ -502,16 +542,28 @@ export const UserDashboard: React.FC = () => {
                             {formatRelativeTime(job.created)}
                           </GlassTableCell>
                           <GlassTableCell className="text-right">
-                            {job.status !== 'pending_review' && (
-                              <GlassButton
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleViewReceipt(job)}
-                              >
-                                <ReceiptIcon className="w-4 h-4 mr-1" />
-                                View
-                              </GlassButton>
-                            )}
+                            <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                              {job.admin_notes && (
+                                <GlassButton
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleViewNotes(job)}
+                                  title="View admin notes"
+                                >
+                                  <MessageSquare className="w-4 h-4" />
+                                </GlassButton>
+                              )}
+                              {job.status !== 'pending_review' && (
+                                <GlassButton
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleViewReceipt(job)}
+                                >
+                                  <ReceiptIcon className="w-4 h-4 mr-1" />
+                                  View
+                                </GlassButton>
+                              )}
+                            </div>
                           </GlassTableCell>
                         </GlassTableRow>
                       ))}
@@ -547,12 +599,12 @@ export const UserDashboard: React.FC = () => {
                       <GlassTableHead>Duration</GlassTableHead>
                       <GlassTableHead>Price</GlassTableHead>
                       <GlassTableHead>Completed</GlassTableHead>
-                      <GlassTableHead className="text-right">Receipt</GlassTableHead>
+                      <GlassTableHead className="text-right">Actions</GlassTableHead>
                     </tr>
                   </GlassTableHeader>
                   <GlassTableBody>
                     {completedJobs.map((job, index) => (
-                      <GlassTableRow key={job.id} delay={index * 0.05}>
+                      <GlassTableRow key={job.id} delay={index * 0.05} onClick={() => handleViewJobDetails(job)}>
                         <GlassTableCell className="font-medium text-white">
                           {job.project_name}
                         </GlassTableCell>
@@ -573,22 +625,34 @@ export const UserDashboard: React.FC = () => {
                            job.estimated_duration_min ? formatDuration(job.estimated_duration_min) : '-'}
                         </GlassTableCell>
                         <GlassTableCell>
-                          {job.price_pesos ? `₱${calculateJobTotal(job).toFixed(2)}` : '-'}
+                          {job.status === 'completed' && job.price_pesos ? `₱${calculateJobTotal(job).toFixed(2)}` : '-'}
                         </GlassTableCell>
                         <GlassTableCell className="text-white/50">
                           {formatRelativeTime(job.updated)}
                         </GlassTableCell>
                         <GlassTableCell className="text-right">
-                          {job.status === 'completed' && (
-                            <GlassButton
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleViewReceipt(job)}
-                            >
-                              <ReceiptIcon className="w-4 h-4 mr-1" />
-                              View
-                            </GlassButton>
-                          )}
+                          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                            {job.admin_notes && (
+                              <GlassButton
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleViewNotes(job)}
+                                title="View admin notes"
+                              >
+                                <MessageSquare className="w-4 h-4" />
+                              </GlassButton>
+                            )}
+                            {job.status === 'completed' && (
+                              <GlassButton
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleViewReceipt(job)}
+                              >
+                                <ReceiptIcon className="w-4 h-4 mr-1" />
+                                View
+                              </GlassButton>
+                            )}
+                          </div>
                         </GlassTableCell>
                       </GlassTableRow>
                     ))}
@@ -723,6 +787,37 @@ export const UserDashboard: React.FC = () => {
         />
       )}
 
+      {/* Admin Notes Modal */}
+      <GlassModal
+        isOpen={showNotesModal}
+        onClose={() => {
+          setShowNotesModal(false);
+          setSelectedNotesJob(null);
+        }}
+        title="Admin Notes"
+        description={selectedNotesJob?.project_name}
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl glass-sub-card">
+            <p className="text-white/80 whitespace-pre-wrap">
+              {selectedNotesJob?.admin_notes || 'No notes available.'}
+            </p>
+          </div>
+          <GlassModalFooter>
+            <GlassButton
+              variant="ghost"
+              className="flex-1"
+              onClick={() => {
+                setShowNotesModal(false);
+                setSelectedNotesJob(null);
+              }}
+            >
+              Close
+            </GlassButton>
+          </GlassModalFooter>
+        </div>
+      </GlassModal>
+
       {/* Floating Action Button (Mobile) */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
@@ -739,6 +834,16 @@ export const UserDashboard: React.FC = () => {
           <Plus className="w-6 h-6" />
         </GlassButton>
       </motion.div>
+
+      {/* Job Details Modal */}
+      <JobDetailsModal
+        job={selectedDetailsJob}
+        isOpen={showJobDetailsModal}
+        onClose={() => {
+          setShowJobDetailsModal(false);
+          setSelectedDetailsJob(null);
+        }}
+      />
     </div>
   );
 };

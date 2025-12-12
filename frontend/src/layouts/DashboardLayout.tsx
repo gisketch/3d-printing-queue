@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useJobs } from '../hooks/useJobs';
+import { useUserRequests } from '../hooks/useUsers';
 import {
   AnimatedBackground,
   GlassSidebar,
@@ -27,9 +29,27 @@ import {
 } from 'lucide-react';
 
 export const DashboardLayout: React.FC = () => {
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isAdmin, isFinance, logout } = useAuth();
   const navigate = useNavigate();
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+
+  // Fetch data for sidebar badges (only for admins)
+  const { jobs: pendingJobs } = useJobs({ status: 'pending_review', realtime: true });
+  const { jobs: printingJobs } = useJobs({ status: 'printing', realtime: true });
+  const { requests: userRequests } = useUserRequests();
+  
+  // Fetch user's jobs for outstanding balance badge
+  const { jobs: userJobs } = useJobs({ userId: user?.id, realtime: true });
+  
+  // Calculate unpaid balance for dashboard badge
+  const unpaidJobsCount = userJobs.filter(j => 
+    ['queued', 'printing', 'completed'].includes(j.status) && !j.is_paid
+  ).length;
+
+  // Calculate badge counts
+  const pendingReviewCount = isAdmin ? pendingJobs.length : 0;
+  const printManagerBadge = isAdmin && printingJobs.length === 0 ? 1 : 0; // Show badge if nothing printing
+  const userRequestsCount = isAdmin ? userRequests.length : 0;
 
   // Check if user has seen the karma system modal
   useEffect(() => {
@@ -79,7 +99,7 @@ export const DashboardLayout: React.FC = () => {
             <GlassSidebarGroup>
               <GlassSidebarGroupLabel>Navigation</GlassSidebarGroupLabel>
               <div className="space-y-2">
-                <GlassSidebarNavLink to="/dashboard" icon={<LayoutDashboard className="w-4 h-4" />}>
+                <GlassSidebarNavLink to="/dashboard" icon={<LayoutDashboard className="w-4 h-4" />} badge={unpaidJobsCount}>
                   Dashboard
                 </GlassSidebarNavLink>
                 <GlassSidebarNavLink to="/queue" icon={<ListOrdered className="w-4 h-4" />}>
@@ -93,18 +113,20 @@ export const DashboardLayout: React.FC = () => {
               <GlassSidebarGroup>
                 <GlassSidebarGroupLabel>Admin</GlassSidebarGroupLabel>
                 <div className="space-y-2">
-                  <GlassSidebarNavLink to="/admin/review" icon={<FileCheck className="w-4 h-4" />}>
+                  <GlassSidebarNavLink to="/admin/review" icon={<FileCheck className="w-4 h-4" />} badge={pendingReviewCount}>
                     Review Jobs
                   </GlassSidebarNavLink>
-                  <GlassSidebarNavLink to="/admin/print" icon={<Play className="w-4 h-4" />}>
+                  <GlassSidebarNavLink to="/admin/print" icon={<Play className="w-4 h-4" />} badge={printManagerBadge}>
                     Print Manager
                   </GlassSidebarNavLink>
-                  <GlassSidebarNavLink to="/admin/users" icon={<Users className="w-4 h-4" />}>
+                  <GlassSidebarNavLink to="/admin/users" icon={<Users className="w-4 h-4" />} badge={userRequestsCount}>
                     User Requests
                   </GlassSidebarNavLink>
-                  <GlassSidebarNavLink to="/admin/reports" icon={<BarChart3 className="w-4 h-4" />}>
-                    Reports
-                  </GlassSidebarNavLink>
+                  {isFinance && (
+                    <GlassSidebarNavLink to="/admin/reports" icon={<BarChart3 className="w-4 h-4" />}>
+                      Reports
+                    </GlassSidebarNavLink>
+                  )}
                 </div>
               </GlassSidebarGroup>
             )}

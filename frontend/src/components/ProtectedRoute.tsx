@@ -6,13 +6,15 @@ import { Loader2 } from 'lucide-react';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  requireFinance?: boolean;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requireAdmin = false,
+  requireFinance = false,
 }) => {
-  const { isAuthenticated, isAdmin, isLoading, mustChangePassword } = useAuth();
+  const { isAuthenticated, isAdmin, isFinance, isLoading, mustChangePassword } = useAuth();
   const location = useLocation();
 
   // Show loading state
@@ -36,6 +38,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Admin route but not admin - redirect to dashboard
   if (requireAdmin && !isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Finance route but not finance admin - redirect to dashboard
+  if (requireFinance && !isFinance) {
     return <Navigate to="/dashboard" replace />;
   }
 

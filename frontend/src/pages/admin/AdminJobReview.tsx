@@ -22,6 +22,7 @@ import {
   GlassSeparator,
   StatCard,
 } from '../../components/ui';
+import { JobDetailsModal } from '../../components/JobDetailsModal';
 import { useJobs } from '../../hooks/useJobs';
 import { approveJob, rejectJob, getSTLFileUrl } from '../../services/jobService';
 import { formatRelativeTime } from '../../lib/utils';
@@ -57,6 +58,15 @@ export const AdminJobReview: React.FC = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectNotes, setRejectNotes] = useState('');
   const [isRejecting, setIsRejecting] = useState(false);
+
+  // Job Details Modal
+  const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
+  const [selectedDetailsJob, setSelectedDetailsJob] = useState<Job | null>(null);
+
+  const handleViewJobDetails = (job: Job) => {
+    setSelectedDetailsJob(job);
+    setShowJobDetailsModal(true);
+  };
 
   const handleApprove = (job: Job) => {
     setSelectedJob(job);
@@ -237,7 +247,7 @@ export const AdminJobReview: React.FC = () => {
             </GlassTableHeader>
             <GlassTableBody>
               {jobs.map((job, index) => (
-                <GlassTableRow key={job.id} delay={index * 0.05}>
+                <GlassTableRow key={job.id} delay={index * 0.05} onClick={() => handleViewJobDetails(job)}>
                   <GlassTableCell>
                     <span className="font-medium text-white">{job.project_name}</span>
                   </GlassTableCell>
@@ -252,7 +262,7 @@ export const AdminJobReview: React.FC = () => {
                     </span>
                   </GlassTableCell>
                   <GlassTableCell>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       {job.stl_file && (
                         <GlassButton
                           size="sm"
@@ -282,7 +292,7 @@ export const AdminJobReview: React.FC = () => {
                     </div>
                   </GlassTableCell>
                   <GlassTableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                       <GlassButton
                         size="sm"
                         variant="success"
@@ -475,6 +485,16 @@ export const AdminJobReview: React.FC = () => {
           </GlassModalFooter>
         </div>
       </GlassModal>
+
+      {/* Job Details Modal */}
+      <JobDetailsModal
+        job={selectedDetailsJob}
+        isOpen={showJobDetailsModal}
+        onClose={() => {
+          setShowJobDetailsModal(false);
+          setSelectedDetailsJob(null);
+        }}
+      />
     </div>
   );
 };
